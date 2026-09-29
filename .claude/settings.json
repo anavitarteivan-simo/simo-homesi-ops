@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(**/*service-account*.json)",
+      "Bash(cat .env*)",
+      "Bash(printenv*)",
+      "Bash(env)",
+      "Bash(sf org display --verbose*)",
+      "Bash(sf org auth:*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)"
+    ],
+    "ask": [
+      "Bash(sf project deploy:*)",
+      "Bash(sf data create:*)",
+      "Bash(sf data update:*)",
+      "Bash(sf data delete:*)",
+      "Bash(sf data upsert:*)",
+      "Bash(sf data import:*)",
+      "Bash(sf apex run:*)",
+      "Bash(sf org delete:*)",
+      "Bash(sf config set:*)",
+      "Bash(git push:*)"
+    ],
+    "allow": [
+      "Bash(sf data query:*)",
+      "Bash(sf project retrieve start:*)",
+      "Bash(sf org list:*)",
+      "Bash(sf org display --target-org homesi-staging)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_prod.py\""
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_prod.py\""
+          }
+        ]
+      }
+    ]
+  }
+}

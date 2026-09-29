@@ -1,0 +1,6 @@
+# Keep local-only and noisy metadata out of deploys
+**/jsconfig.json
+**/.eslintrc.json
+**/__tests__/**
+**/*.dup
+package.xml
