@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Read-only access to integration-maintained fields that have no profile FLS on purpose (so users cannot edit them). Assign only to admins who need to audit these fields. Contains: Opportunity.Parent_Owner_Synced__c (Encompass sync, 2026-09-30).</description>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Opportunity.Parent_Owner_Synced__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>Integration Fields (Read Only)</label>
+</PermissionSet>
