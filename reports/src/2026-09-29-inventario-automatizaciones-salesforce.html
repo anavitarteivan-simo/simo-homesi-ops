@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Inventario de automatizaciones de Salesforce</title>
+<style>
+  @page { size: Letter; margin: 13mm 15mm 12mm 15mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Arial, sans-serif; font-size: 9.5pt; line-height: 1.38; color: #1f2328; margin: 0; }
+  header { border-bottom: 2px solid #1f4e79; padding-bottom: 6px; margin-bottom: 9px; }
+  h1 { font-size: 15.5pt; margin: 0 0 3px; color: #1f4e79; }
+  .meta { font-size: 8.6pt; color: #57606a; }
+  h2 { font-size: 11pt; color: #1f4e79; margin: 11px 0 4px; border-bottom: 1px solid #d0d7de; padding-bottom: 2px; }
+  p { margin: 4px 0 6px; }
+  ul, ol { margin: 3px 0 6px; padding-left: 18px; }
+  li { margin: 2px 0; }
+  code { font-family: Consolas, "Courier New", monospace; font-size: 8.4pt; background: #f3f4f6; padding: 0 3px; border-radius: 3px; }
+  .summary { background: #eef4fa; border-left: 4px solid #1f4e79; padding: 7px 10px; margin: 6px 0 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 5px 0 7px; font-size: 8.8pt; }
+  th, td { border: 1px solid #d0d7de; padding: 3px 6px; text-align: left; vertical-align: top; }
+  th { background: #f3f6f9; font-weight: 600; }
+  .kpis { display: flex; gap: 6px; margin: 7px 0; }
+  .kpi { flex: 1; border: 1px solid #d0d7de; border-radius: 4px; padding: 5px 7px; }
+  .kpi b { display: block; font-size: 15pt; color: #1f4e79; line-height: 1.1; }
+  .kpi span { font-size: 8.2pt; color: #57606a; }
+  .sev-h { color: #b42318; font-weight: 600; }
+  .sev-m { color: #9a6700; font-weight: 600; }
+  .sev-l { color: #57606a; font-weight: 600; }
+  footer { margin-top: 9px; font-size: 7.8pt; color: #57606a; border-top: 1px solid #d0d7de; padding-top: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Inventario de automatizaciones de Salesforce (prod)</h1>
+  <div class="meta">Homesi / Simo Solutions Group · Org <code>00DKb000000OvoRMAS</code> · Autor: Ivan Anavitarte · Fecha: 29-09-2026 · Método: solo lectura, sin cambios en el org</div>
+</header>
+
+<div class="summary">
+  <strong>Resumen.</strong> Se regeneró desde producción el inventario completo de flows y reglas, que estaba desactualizado desde el 25-08-2026
+  (le faltaban 38 flows activos). El resultado queda en el repositorio (<code>docs/salesforce/AUTOMATION_INVENTORY.md</code>).
+  Durante el análisis aparecieron <strong>6 flows que pueden impedir guardar un registro si falla un email</strong>,
+  una regla de sharing que la documentación daba por eliminada, y varias automatizaciones con personas o buzones escritos a mano,
+  que dejarán de funcionar cuando esas personas cambien de rol. No se modificó nada; cada hallazgo requiere una decisión.
+</div>
+
+<div class="kpis">
+  <div class="kpi"><b>154</b><span>flows propios activos (83 inactivos)</span></div>
+  <div class="kpi"><b>71</b><span>de ellos sobre Opportunity</span></div>
+  <div class="kpi"><b>29</b><span>reglas de validación (24 activas)</span></div>
+  <div class="kpi"><b>90</b><span>reglas de sharing</span></div>
+  <div class="kpi"><b>16</b><span>triggers Apex propios (+33 de paquetes)</span></div>
+</div>
+
+<h2>1. Alcance y método</h2>
+<ul>
+  <li><strong>Qué se inventarió:</strong> los 154 flows propios activos; reglas de validación, sharing, duplicados, coincidencia (matching), asignación, respuesta automática y escalado; triggers Apex. Los 82 flows de paquetes de Salesforce solo se contaron.</li>
+  <li><strong>Cómo:</strong> consultas SOQL y Tooling API, y recuperación de la metadata de prod en una carpeta fuera del repositorio. Se usó la <em>versión activa</em> de cada flow: en 2 casos la versión más reciente era un borrador y se descartó.</li>
+  <li><strong>Descripciones:</strong> 80 flows tienen descripción propia. Las de los otros 74 se redactaron leyendo su metadata y van marcadas en el documento.</li>
+</ul>
+
+<h2>2. Qué cambió respecto al inventario anterior (25-08-2026)</h2>
+<ul>
+  <li>Faltaban <strong>38 flows activos</strong>, entre ellos los 12 de pantalla, los de historial de notas de LaHaus, los de opt-in, los de Opportunity Team Member, Chatter y SMS.</li>
+  <li>Hay 3 flows que ahora están inactivos (<code>Loan_Officer_default_by_Opp</code>, <code>Loan_Officer_default_by_lead</code>, <code>Opt_Out_Email_flow</code>) y 4 reglas de validación nuevas.</li>
+  <li>Por primera vez se documentan las reglas de sharing, duplicados y coincidencia.</li>
+</ul>
+
+<h2>3. Hallazgos</h2>
+<table>
+  <tr><th style="width:11%">Severidad</th><th style="width:34%">Hallazgo</th><th>Impacto y recomendación</th></tr>
+  <tr><td class="sev-h">Alta</td><td>6 flows after-save envían email sin ruta de error (<code>LOA2_Notify_COC_CD/LE</code>, <code>LOA2_FHA_Docs_Email_to_Nila</code>, <code>Notify_New_LOA_Assignment</code>, <code>Social_Media_Leads_Alerts_and_Updates</code>, <code>Jorge_Zuzunaga_New_Lead_Facebook</code>).</td><td>Si el email falla, se revierte el guardado del registro, y eso es lo que ve el usuario. En dos de ellos la descripción dice que tienen ruta de error, pero la versión activa no la tiene. <strong>Añadir una ruta de error a cada envío.</strong></td></tr>
+  <tr><td class="sev-h">Alta</td><td>La regla de sharing <code>Contact_All_Internal_Read</code> sigue existiendo, con acceso Edit.</td><td>Ahora no tiene efecto, porque el acceso de Contact depende de su Account. Pero si se cambia ese sharing por defecto, repetiría el recálculo que ya bloqueó guardados en todo el org. <strong>Eliminarla de forma controlada.</strong></td></tr>
+  <tr><td class="sev-m">Media</td><td>Personas, buzones e Ids escritos a mano en flows de asignación de dueño y de sucursal, notificaciones y campañas.</td><td>Dejarán de funcionar sin avisar cuando alguien deje la empresa o cambie de rol. Uno copia en los emails a un dominio externo. <strong>Pasarlos a configuración (metadata personalizada o settings).</strong></td></tr>
+  <tr><td class="sev-m">Media</td><td>Lógica sospechosa: comparación con el prefijo de Opportunity en un flow de Tasks, comprobaciones copiadas y pegadas en la asignación de record type, y palabras clave demasiado genéricas en los flows de Notes y Chatter.</td><td>Hay registros que se clasifican mal o se actualizan sin necesidad. <strong>Revisar con el dueño funcional de cada flow.</strong></td></tr>
+  <tr><td class="sev-l">Baja</td><td>2 backfills programados que ya se ejecutaron siguen activos, y los 3 flows SLA son idénticos salvo la hora.</td><td>Ruido y consumo innecesario. <strong>Desactivar los que ya cumplieron su función y confirmar si las 3 ejecuciones diarias son intencionales.</strong></td></tr>
+  <tr><td class="sev-l">Baja</td><td>2 flows tienen una versión nueva, inválida u obsoleta, sin activar.</td><td>Si alguien activa por error "la última versión", los rompe. <strong>Borrar esos borradores.</strong></td></tr>
+</table>
+
+<h2>4. Próximos pasos propuestos</h2>
+<ol>
+  <li>Corregir la ruta de error de los 6 flows con email: primero en staging, luego en prod, desplegando en dos fases como indica el procedimiento del repo.</li>
+  <li>Decidir si se elimina <code>Contact_All_Internal_Read</code> y hacerlo fuera del horario laboral.</li>
+  <li>Revisar con negocio los flows con personas o buzones escritos a mano, y los de lógica sospechosa.</li>
+  <li>Guardar en el repo los scripts que generan el inventario, para regenerarlo cada mes sin hacerlo a mano.</li>
+</ol>
+
+<footer>Detalle completo por flow y por regla, con su condición, efectos y etiqueta [Verified]/[Likely]: <code>docs/salesforce/AUTOMATION_INVENTORY.md</code>, secciones 3, 4 y 7. Fuente: Salesforce prod, lectura del 29-09-2026.</footer>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Informe de incidencia: Owner revertido en loans F30EEP</title>
+<style>
+  @page { size: Letter; margin: 13mm 15mm 12mm 15mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Arial, sans-serif; font-size: 9.5pt; line-height: 1.36; color: #1f2328; margin: 0; }
+  header { border-bottom: 2px solid #1f4e79; padding-bottom: 6px; margin-bottom: 10px; }
+  h1 { font-size: 16pt; margin: 0 0 3px; color: #1f4e79; }
+  .meta { font-size: 8.8pt; color: #57606a; }
+  h2 { font-size: 11.5pt; color: #1f4e79; margin: 10px 0 3px; border-bottom: 1px solid #d0d7de; padding-bottom: 2px; }
+  p { margin: 4px 0 6px; }
+  ul { margin: 3px 0 6px; padding-left: 18px; }
+  li { margin: 2px 0; }
+  code { font-family: Consolas, "Courier New", monospace; font-size: 8.8pt; background: #f3f4f6; padding: 0 3px; border-radius: 3px; }
+  .summary { background: #eef4fa; border-left: 4px solid #1f4e79; padding: 7px 10px; margin: 8px 0 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 5px 0 8px; font-size: 9pt; }
+  th, td { border: 1px solid #d0d7de; padding: 4px 6px; text-align: left; vertical-align: top; }
+  th { background: #f3f6f9; font-weight: 600; }
+  pre { font-family: Consolas, monospace; font-size: 8.5pt; background: #f6f8fa; border: 1px solid #d0d7de; padding: 6px 8px; margin: 5px 0 8px; white-space: pre-wrap; }
+  .flow { font-size: 9pt; background: #fafbfc; border: 1px dashed #b6c2cf; padding: 6px 9px; margin: 5px 0 8px; }
+  .ok { color: #1a7f37; font-weight: 600; }
+  .warn { color: #9a6700; font-weight: 600; }
+  .break { break-before: page; }
+  footer { margin-top: 10px; font-size: 8pt; color: #57606a; border-top: 1px solid #d0d7de; padding-top: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Informe de incidencia: el Owner de los loans F30EEP se revertía solo</h1>
+  <div class="meta">Homesi / Simo Solutions Group · Salesforce prod (<code>00DKb000000OvoRMAS</code>) · Autor: Ivan Anavitarte · Fecha: 29-09-2026 · Estado: <span class="ok">Resuelto en producción</span></div>
+</header>
+
+<div class="summary">
+  <strong>Resumen.</strong> Cuando un usuario cambiaba el Owner de un loan del programa F30EEP (los "Tule River: …"),
+  el usuario de integración <code>sf integrations</code> lo devolvía al Owner anterior entre 40 y 70 minutos después.
+  La causa era el sync Encompass → Salesforce: en cada carga copiaba el Owner del loan "padre" y la clase Apex que lo recibe
+  lo aplicaba también a registros existentes. Se corrigió en la clase Apex <code>OpportunityUpdater</code>, que ahora solo
+  acepta el Owner del sync al <em>crear</em> la Opportunity. Se desplegó primero en staging y luego en prod, con 22/22 tests
+  en verde, y el código quedó fusionado en el repositorio.
+</div>
+
+<h2>1. Problema</h2>
+<p>Se reportó que dos loans quedaban asignados siempre a Giovanni Osorio como Opportunity Owner:
+loan <code>700002066397</code> (<code>006Qg00000mWiGqIAK</code>) y loan <code>760002073925</code> (<code>006Qg00000osf7sIAA</code>).
+El historial de campos mostraba un ciclo repetido: Giovanni cambiaba el Owner a <code>sf integrations</code> y, poco después,
+<code>sf integrations</code> se lo reasignaba a él.</p>
+<table>
+  <tr><th>Loan</th><th>Cambio manual (Giovanni → sf integrations)</th><th>Reversión (sf integrations → Giovanni)</th></tr>
+  <tr><td>700002066397</td><td>11-09 14:43 · 17-09 21:53 · 22-09 17:30</td><td>11-09 15:28 · 17-09 22:35:29 · 22-09 18:36</td></tr>
+  <tr><td>760002073925</td><td>17-09 21:55</td><td>17-09 22:35:27</td></tr>
+</table>
+<p>Horas en UTC. El 17-09 los dos loans se revirtieron con 2 segundos de diferencia, lo que apuntaba a un proceso por lotes y no a una edición manual.
+El problema no afectaba solo a estos dos loans: <strong>cualquier cambio manual de Owner en un loan F30EEP se deshacía en la siguiente carga de Encompass</strong>.</p>
+
+<h2>2. Causa detectada</h2>
+<p><strong>Hipótesis inicial descartada.</strong> Se sospechaba del trigger <code>OpportunityAccountExecutiveOwner</code>, que asigna Owner
+a partir de <code>Account_Executive__c</code> cuando <code>Affinity_Program__c = true</code>. En prod los dos loans tienen
+<code>Account_Executive__c</code> vacío y <code>Affinity_Program__c = false</code>, así que el trigger no podía ejecutarse. Su código en prod es idéntico al de staging.</p>
+<p><strong>Causa real.</strong> Al revisar el repositorio <code>salesForceCityLendingInc/supreme-encompass-salesforce</code>, que es el sync de AWS, apareció este flujo:</p>
+<div class="flow">
+  Excel de Encompass subido a S3 → Lambda <code>supreme-encompass-salesforce-prod-processFile</code><br>
+  → si <code>Loan_Program__c = "F30EEP"</code>, busca el loan padre (<code>LoanId__c = GVMT_Human_Guid__c</code>)<br>
+  → si el Owner del padre no es <code>sf integrations</code>, añade <code>OwnerId</code> del padre a <code>fieldsToUpdate</code><br>
+  → la clase Apex <code>OpportunityUpdater</code> aplica todos los campos de esa lista al registro, <em>también en loans que ya existen</em>.
+</div>
+<p>Se confirmó en prod que el loan padre de cada caso (<code>006Qg00000kbW4sIAE</code> y <code>006Qg00000jtOPZIA2</code>, programa C40EEP)
+tiene como Owner a Giovanni Osorio. Así que el Owner de los loans F30EEP se sobrescribía con el del padre en cada carga del Excel.
+Como la escritura la hace <code>sf integrations</code>, en el historial parece la acción de un trigger o flow, y por eso era difícil de diagnosticar.</p>
+
+<h2>3. Solución propuesta</h2>
+<p>Se evaluaron dos opciones: (1) reasignar el Owner del loan padre, que solo resuelve estos casos, y
+(2) cambiar el código para que el Owner del padre se copie solo al crear el loan. <strong>Se eligió la opción 2</strong>, porque evita que el
+problema se repita en cualquier loan futuro.</p>
+<p>El cambio se hizo en la clase Apex <code>OpportunityUpdater</code> y no en la Lambda, por tres motivos:</p>
+<ul>
+  <li>La Apex ya distingue si el registro es nuevo o existente (<code>isNewOpportunity</code>). La Lambda no lo sabe.</li>
+  <li>Protege frente a cualquier llamada que envíe <code>OwnerId</code>, no solo la de F30EEP.</li>
+  <li>No requiere desplegar la Lambda en AWS.</li>
+</ul>
+<pre>if (!isNewOpportunity) {
+    applyFieldUpdates(opp, withoutOwnerId(data.fieldsToUpdate));   // antes: data.fieldsToUpdate
+}</pre>
+<p>El nuevo método <code>withoutOwnerId()</code> quita <code>OwnerId</code> de la lista solo cuando la Opportunity ya existe.
+Lo demás no cambia: al crear un loan se sigue aplicando el Owner del padre, y la reasignación a <code>sf integrations</code>
+cuando el Owner está inactivo se mantiene. Se añadieron 3 tests: un loan existente conserva su Owner, un loan nuevo toma el Owner del sync,
+y el método filtra solo <code>OwnerId</code>.</p>
+
+<h2>4. Cómo se ejecutó</h2>
+<table>
+  <tr><th style="width:4%">#</th><th style="width:30%">Paso</th><th>Resultado</th></tr>
+  <tr><td>1</td><td>Diagnóstico en prod (solo lectura)</td><td>Consultas a Opportunity, OpportunityFieldHistory, ApexTrigger, FlowDefinitionView y ApexClass. Se descartó el trigger y se localizó el sync.</td></tr>
+  <tr><td>2</td><td>Revisión del código del sync</td><td>Clon de solo lectura del repo. En <code>handler.ts</code> y <code>mapping.ts</code> se confirmó la copia del <code>OwnerId</code> del padre.</td></tr>
+  <tr><td>3</td><td>Comprobación antes de modificar</td><td>La clase del repo era idéntica a la de prod. La de staging era una versión anterior, sin cambios propios, así que se podía sobrescribir sin pisar trabajo de nadie.</td></tr>
+  <tr><td>4</td><td>Deploy a staging</td><td>Deploy <code>0AfEm00000ZpZQzKAN</code>: <span class="ok">22/22 tests</span>. Se volvió a leer la clase activa para confirmar el cambio.</td></tr>
+  <tr><td>5</td><td>Validación en prod sin aplicar cambios (<code>--dry-run</code>)</td><td>Validación <code>0AfQg0000023mrlKAA</code>: <span class="ok">22/22 tests</span>. Se confirmó que prod no cambió.</td></tr>
+  <tr><td>6</td><td>Deploy a prod (quick deploy de la validación)</td><td>Deploy <code>0AfQg0000023mtNKAQ</code>. Se volvió a leer la clase activa: contiene el cambio en la ruta de loans existentes, y la ruta de creación no cambia.</td></tr>
+  <tr><td>7</td><td>Control de versiones</td><td>PR #3 en <code>supreme-encompass-salesforce</code> (squash and merge, <code>127c63e</code>): <code>master</code> coincide con prod.</td></tr>
+  <tr><td>8</td><td>Documentación</td><td>PR #1 en <code>simo-homesi-ops</code> (<code>e49e2f9</code>): gotcha #31 en <code>ORG_REFERENCE.md</code> y corrección de una nota desactualizada sobre <code>OpportunityCoOwnerSharing</code>.</td></tr>
+</table>
+<p>Durante todo el proceso no se modificaron datos en ningún org, ni la Lambda, ni los interruptores de test mode.</p>
+
+<h2>5. Estado final y pendientes</h2>
+<ul>
+  <li><span class="ok">Resuelto:</span> desde el 29-09-2026 22:13 UTC, el sync de Encompass ya no sobrescribe el Owner de loans existentes.</li>
+  <li><span class="warn">Datos sin cambiar:</span> los dos loans reportados siguen a nombre de Giovanni Osorio, porque el arreglo no reasigna registros. Su Owner puede cambiarse manualmente y ya no se revertirá. La reasignación corresponde al negocio.</li>
+  <li><span class="warn">Riesgo similar sin corregir:</span> el sync también copia del padre, en cada carga, <code>LOA1__c</code>, <code>Sales_Agent__c</code>,
+      <code>Referred_By__c</code>, <code>State__c</code>, <code>LOA_support_OD__c</code> y sus fechas. Un cambio manual de esos campos en un loan F30EEP también se revertiría.</li>
+  <li><strong>Verificación con datos reales:</strong> tras el próximo cambio manual de Owner en un loan F30EEP y la siguiente carga del Excel, revisar el historial de Owner para confirmar que ya no aparece la reversión.</li>
+  <li>Adicional: PR #2 en <code>simo-homesi-ops</code> añade <code>data/</code> al <code>.gitignore</code>, para que los archivos locales con PII no terminen en el repositorio.</li>
+</ul>
+
+<footer>Fuentes: consultas SOQL en Salesforce prod y staging (29-09-2026), repositorio <code>salesForceCityLendingInc/supreme-encompass-salesforce</code>, <code>docs/salesforce/ORG_REFERENCE.md</code> (gotcha #31).</footer>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "name": "automation-inventory",
+  "private": true,
+  "description": "Generates docs/salesforce/AUTOMATION_INVENTORY.md from a read-only prod retrieve",
+  "dependencies": {
+    "fast-xml-parser": "^5.11.2"
+  }
+}
