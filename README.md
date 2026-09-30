@@ -56,12 +56,39 @@ sf org login web --alias homesi-staging --instance-url https://test.salesforce.c
 sf org list
 ```
 
-**4. Protección de commits:**
+**4. Protección de commits (pre-commit):**
+
+[pre-commit](https://pre-commit.com/) ejecuta comprobaciones en tu equipo **antes de cada
+commit y de cada push**. Si una falla, git cancela la operación. Es la única capa que frena un
+secreto *antes* de que salga de tu equipo: el guard de Claude solo actúa sobre comandos de
+Claude, y el ruleset de GitHub actúa cuando el commit ya subió. Configuración:
+[`.pre-commit-config.yaml`](.pre-commit-config.yaml).
+
+| Comprobación | Cuándo | Qué evita |
+|---|---|---|
+| `gitleaks`, `detect-private-key` | commit | subir claves, tokens o llaves privadas |
+| `check-added-large-files` (> 2 MB) | commit | subir exportaciones o archivos con PII |
+| `check-json`, `check-merge-conflict` | commit | JSON inválido, marcas de conflicto |
+| `no-commit-to-branch` | commit | hacer commit directamente en `main` |
+| `block-push-to-main` | push | hacer push directo a `main` (usa una rama + PR) |
+
+Instalación, **una vez por equipo y por clon** (no se activa sola al clonar):
 ```bash
-pip install pre-commit
-pre-commit install       # instala los hooks pre-commit y pre-push
-pre-commit autoupdate     # actualiza las versiones fijadas
+pip install --user pre-commit      # Windows: py -3 -m pip install --user pre-commit
+pre-commit install                 # Windows: py -3 -m pre_commit install
+                                   # instala los hooks pre-commit y pre-push
+pre-commit run --all-files         # comprobación inicial (la primera vez tarda unos minutos)
 ```
+Luego, de vez en cuando: `pre-commit autoupdate` (actualiza las versiones fijadas, en un PR).
+
+- En Windows, `pip install --user` deja `pre-commit.exe` fuera del PATH. Usa
+  `py -3 -m pre_commit ...` o añade `%APPDATA%\Python\Python313\Scripts` al PATH. Los hooks de
+  git funcionan igual, porque llaman a Python por su ruta completa.
+- Si ya lo tenías instalado antes de 2026-09-30, repite `pre-commit install` para activar
+  también el hook de push.
+- El hook de push solo revisa commits que todavía no están en el remoto.
+- `git commit --no-verify` lo salta. Es una ayuda contra errores, no un control de seguridad;
+  el control es el ruleset `protect-main` de GitHub (`docs/CHANGE_POLICY.md` §4).
 
 **5. Servidores MCP:** abre `claude` en la raíz del repo, aprueba los servidores del proyecto y
 ejecuta `/mcp` para autenticar los que usan OAuth (Salesforce, Customer.io). Luego en cada
