@@ -44,6 +44,7 @@ where noted in "Known stale content" below.
 | SiMo BPO record type + reply-gated lead capture (design only) | `simo-bpo/DESIGN.md` |
 | Lead email engagement score (design only) | `customerio/EMAIL_ENGAGEMENT_DESIGN.md` |
 | Customer.io → Salesforce subscription redesign (executed 2026-05-21) | `customerio/SUBSCRIPTION_REDESIGN.md` |
+| Salesforce Data Storage at 82.7%: stop Customer.io "Email Sent" Tasks, archive + hard-delete (plan, 2026-09-30) | `customerio/TASK_STORAGE_PLAN.md` |
 | Customer.io SimoSolutions workspace replication spec | `customerio/SIMO_WORKSPACE_REPLICATION.md` |
 | BigQuery analytics agent system prompt | `bigquery/AGENT_PROMPT.md` |
 | LOA1 / LOA2 First Touch playbook (human process) | `playbooks/LOA_PLAYBOOK.md` |
