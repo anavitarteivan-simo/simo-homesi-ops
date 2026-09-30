@@ -8,3 +8,6 @@
 
 # Local-only working files; may hold borrower/realtor PII (see CLAUDE.md section 5)
 data/
+
+# Python bytecode (guard tests)
+__pycache__/

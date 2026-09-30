@@ -28,7 +28,7 @@ than silently picking one.
 ## 2. Safety rules (non-negotiable)
 
 1. **Prefer reads.** Any write, deploy, delete, merge, publish, or campaign state change in a
-   prod system needs explicit confirmation. A hook (`.claude/hooks/guard_prod.py`) enforces a
+   prod system needs explicit confirmation. A hook (`.claude/hooks/guard.py`) enforces a
    prompt; do not try to route around it.
 2. **Two kill switches — never change either without an explicit instruction:**
    - n8n Data Table `fur_settings` (`0A0KbAfzHmAHvhCl`) → `test_mode` = **true**. Redirects every
@@ -40,6 +40,9 @@ than silently picking one.
    `RecordType.DeveloperName`.** This caused a 2-day prod outage
    (`docs/salesforce/PROD_OUTAGE_RCA_2DAY.md`).
 5. **Do not repoint any mailbox** (n8n senders/recipients) without explicit instruction.
+6. **Every change ships through a PR — never commit or push to `main`, never deploy a Lambda
+   from a laptop, deploy Salesforce prod only from merged `main`.** Per-system paths and what
+   the guard denies: `docs/CHANGE_POLICY.md`. Use `/ship` to open the PR.
 
 ## 3. Verification rules (each one has caused real damage here)
 
@@ -93,6 +96,7 @@ salesforce/    SFDX project (run sf commands from here) — has its own CLAUDE.m
 n8n/           exported workflow JSON + export script — has its own CLAUDE.md
 data/          local-only working files (git-ignored, may hold PII)
 reports/       dated PDF reports for people (+ src/ HTML) — conventions in reports/README.md
+.github/       PR template, CODEOWNERS, CI (guard tests + gitleaks)
 scripts/       repeatable tooling, by system (e.g. scripts/salesforce/automation-inventory/ regenerates AUTOMATION_INVENTORY.md)
 .claude/       settings, prod-guard hook, commands, skills
 ```

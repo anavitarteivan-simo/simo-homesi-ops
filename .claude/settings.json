@@ -11,7 +11,17 @@
       "Bash(sf org display --verbose*)",
       "Bash(sf org auth:*)",
       "Bash(git push --force*)",
-      "Bash(git push -f*)"
+      "Bash(git push -f*)",
+      "Bash(git push --force-with-lease*)",
+      "Bash(git push origin main*)",
+      "Bash(git push origin master*)",
+      "Bash(gh pr merge*--admin*)",
+      "Bash(serverless deploy*)",
+      "Bash(sls deploy*)",
+      "Bash(sam deploy*)",
+      "Bash(cdk deploy*)",
+      "Bash(aws lambda update-function-code*)",
+      "Bash(aws lambda update-function-configuration*)"
     ],
     "ask": [
       "Bash(sf project deploy:*)",
@@ -23,7 +33,10 @@
       "Bash(sf apex run:*)",
       "Bash(sf org delete:*)",
       "Bash(sf config set:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh repo edit:*)",
+      "Bash(aws secretsmanager get-secret-value:*)"
     ],
     "allow": [
       "Bash(sf data query:*)",
@@ -43,7 +56,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_prod.py\""
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.sh\""
           }
         ]
       },
@@ -52,7 +65,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_prod.py\""
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.sh\""
           }
         ]
       }

@@ -1,0 +1,7 @@
+# Who reviews what. Policy: docs/CHANGE_POLICY.md §4.
+# Add a second maintainer here when there is one.
+*              @anavitarteivan-simo
+/salesforce/   @anavitarteivan-simo
+/n8n/          @anavitarteivan-simo
+/.claude/      @anavitarteivan-simo
+/.github/      @anavitarteivan-simo

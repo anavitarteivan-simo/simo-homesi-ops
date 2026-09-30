@@ -20,8 +20,10 @@ salesforce/            proyecto SFDX (los comandos sf se corren desde aquí)
 n8n/                   exportaciones JSON de workflows + script de exportación
 data/                  archivos de trabajo locales — ignorado por git (puede tener PII)
 .claude/settings.json  permisos y hook de protección de producción
-.claude/hooks/         guard_prod.py — pide confirmación antes de escribir en prod
-.claude/commands/      /sync-docs y /prod-preflight
+.claude/hooks/         guard.py — bloquea o pide confirmación según docs/CHANGE_POLICY.md
+.claude/managed/       managed settings de referencia (reglas para toda la organización)
+.github/               plantilla de PR, CODEOWNERS, CI
+.claude/commands/      /sync-docs, /prod-preflight y /ship
 .claude/skills/        skills del proyecto (ver README interno)
 .mcp.json              servidores MCP (sin secretos, usa variables)
 .env.example           nombres de variables; copia a .env y llénalo
@@ -54,12 +56,39 @@ sf org login web --alias homesi-staging --instance-url https://test.salesforce.c
 sf org list
 ```
 
-**4. Protección de commits:**
+**4. Protección de commits (pre-commit):**
+
+[pre-commit](https://pre-commit.com/) ejecuta comprobaciones en tu equipo **antes de cada
+commit y de cada push**. Si una falla, git cancela la operación. Es la única capa que frena un
+secreto *antes* de que salga de tu equipo: el guard de Claude solo actúa sobre comandos de
+Claude, y el ruleset de GitHub actúa cuando el commit ya subió. Configuración:
+[`.pre-commit-config.yaml`](.pre-commit-config.yaml).
+
+| Comprobación | Cuándo | Qué evita |
+|---|---|---|
+| `gitleaks`, `detect-private-key` | commit | subir claves, tokens o llaves privadas |
+| `check-added-large-files` (> 2 MB) | commit | subir exportaciones o archivos con PII |
+| `check-json`, `check-merge-conflict` | commit | JSON inválido, marcas de conflicto |
+| `no-commit-to-branch` | commit | hacer commit directamente en `main` |
+| `block-push-to-main` | push | hacer push directo a `main` (usa una rama + PR) |
+
+Instalación, **una vez por equipo y por clon** (no se activa sola al clonar):
 ```bash
-pip install pre-commit
-pre-commit install
-pre-commit autoupdate     # actualiza las versiones fijadas
+pip install --user pre-commit      # Windows: py -3 -m pip install --user pre-commit
+pre-commit install                 # Windows: py -3 -m pre_commit install
+                                   # instala los hooks pre-commit y pre-push
+pre-commit run --all-files         # comprobación inicial (la primera vez tarda unos minutos)
 ```
+Luego, de vez en cuando: `pre-commit autoupdate` (actualiza las versiones fijadas, en un PR).
+
+- En Windows, `pip install --user` deja `pre-commit.exe` fuera del PATH. Usa
+  `py -3 -m pre_commit ...` o añade `%APPDATA%\Python\Python313\Scripts` al PATH. Los hooks de
+  git funcionan igual, porque llaman a Python por su ruta completa.
+- Si ya lo tenías instalado antes de 2026-09-30, repite `pre-commit install` para activar
+  también el hook de push.
+- El hook de push solo revisa commits que todavía no están en el remoto.
+- `git commit --no-verify` lo salta. Es una ayuda contra errores, no un control de seguridad;
+  el control es el ruleset `protect-main` de GitHub (`docs/CHANGE_POLICY.md` §4).
 
 **5. Servidores MCP:** abre `claude` en la raíz del repo, aprueba los servidores del proyecto y
 ejecuta `/mcp` para autenticar los que usan OAuth (Salesforce, Customer.io). Luego en cada
@@ -89,16 +118,25 @@ servidor de Salesforce corre `getUserInfo`: el que devuelve `companyName: "Homes
 
 ## Cómo protege producción
 
-- **`guard_prod.py`** (hook PreToolUse) pide confirmación ante: escrituras `sf` contra `prod`
-  o sin `--target-org`, llamadas MCP de escritura a `salesforce-prod`, `n8n` o `customerio`,
-  y cualquier cosa que toque `fur_settings` / `Test_Mode__c`. Las lecturas no se bloquean.
+La política completa (qué camino sigue un cambio a cada sistema y qué está prohibido) está en
+[`docs/CHANGE_POLICY.md`](docs/CHANGE_POLICY.md). Resumen:
+
+- **Nunca directo a `main`.** Rama `area/descripcion` → PR → merge (`/ship` lo hace). Lo
+  bloquean el hook, pre-commit (commit y push) y el ruleset `protect-main` de GitHub.
+- **`guard.py`** (hook PreToolUse) **bloquea**: commit/push a `main`, force push, deploys
+  locales de Lambdas (`serverless`, `sam`, `cdk`, `aws lambda update-function-*`) y deploys
+  de Salesforce a prod que no salgan de `main` limpio y actualizado. **Pide confirmación**
+  ante: escrituras `sf` a prod o sin `--target-org`, escrituras MCP a Salesforce prod, n8n,
+  Customer.io, Make o BigQuery, escrituras de AWS, lectura de secretos y cualquier cosa que
+  toque `fur_settings` / `Test_Mode__c`. Si no encuentra Python, pide confirmación en todo
+  (falla cerrado). Tests: `python .claude/hooks/test_guard.py`.
 - **Permisos** en `.claude/settings.json`: Claude no puede leer `.env`, ni mostrar variables
   de entorno, ni hacer `git push --force`. Deploys, escrituras de datos y `git push` piden
   confirmación.
 - **`.gitignore`** excluye secretos, `data/`, y todo CSV, XLSX y PDF.
 - **gitleaks** en pre-commit bloquea commits con algo con forma de clave.
 
-> En Windows, si `python3` no existe, cambia `python3` por `python` en `.claude/settings.json`.
+> `guard.sh` busca `python3`, `python` o `py -3`, así que funciona en Windows sin cambios.
 
 ## Reglas de oro
 
