@@ -20,8 +20,10 @@ salesforce/            proyecto SFDX (los comandos sf se corren desde aquí)
 n8n/                   exportaciones JSON de workflows + script de exportación
 data/                  archivos de trabajo locales — ignorado por git (puede tener PII)
 .claude/settings.json  permisos y hook de protección de producción
-.claude/hooks/         guard_prod.py — pide confirmación antes de escribir en prod
-.claude/commands/      /sync-docs y /prod-preflight
+.claude/hooks/         guard.py — bloquea o pide confirmación según docs/CHANGE_POLICY.md
+.claude/managed/       managed settings de referencia (reglas para toda la organización)
+.github/               plantilla de PR, CODEOWNERS, CI
+.claude/commands/      /sync-docs, /prod-preflight y /ship
 .claude/skills/        skills del proyecto (ver README interno)
 .mcp.json              servidores MCP (sin secretos, usa variables)
 .env.example           nombres de variables; copia a .env y llénalo
@@ -57,7 +59,7 @@ sf org list
 **4. Protección de commits:**
 ```bash
 pip install pre-commit
-pre-commit install
+pre-commit install       # instala los hooks pre-commit y pre-push
 pre-commit autoupdate     # actualiza las versiones fijadas
 ```
 
@@ -89,16 +91,25 @@ servidor de Salesforce corre `getUserInfo`: el que devuelve `companyName: "Homes
 
 ## Cómo protege producción
 
-- **`guard_prod.py`** (hook PreToolUse) pide confirmación ante: escrituras `sf` contra `prod`
-  o sin `--target-org`, llamadas MCP de escritura a `salesforce-prod`, `n8n` o `customerio`,
-  y cualquier cosa que toque `fur_settings` / `Test_Mode__c`. Las lecturas no se bloquean.
+La política completa (qué camino sigue un cambio a cada sistema y qué está prohibido) está en
+[`docs/CHANGE_POLICY.md`](docs/CHANGE_POLICY.md). Resumen:
+
+- **Nunca directo a `main`.** Rama `area/descripcion` → PR → merge (`/ship` lo hace). Lo
+  bloquean el hook, pre-commit (commit y push) y el ruleset `protect-main` de GitHub.
+- **`guard.py`** (hook PreToolUse) **bloquea**: commit/push a `main`, force push, deploys
+  locales de Lambdas (`serverless`, `sam`, `cdk`, `aws lambda update-function-*`) y deploys
+  de Salesforce a prod que no salgan de `main` limpio y actualizado. **Pide confirmación**
+  ante: escrituras `sf` a prod o sin `--target-org`, escrituras MCP a Salesforce prod, n8n,
+  Customer.io, Make o BigQuery, escrituras de AWS, lectura de secretos y cualquier cosa que
+  toque `fur_settings` / `Test_Mode__c`. Si no encuentra Python, pide confirmación en todo
+  (falla cerrado). Tests: `python .claude/hooks/test_guard.py`.
 - **Permisos** en `.claude/settings.json`: Claude no puede leer `.env`, ni mostrar variables
   de entorno, ni hacer `git push --force`. Deploys, escrituras de datos y `git push` piden
   confirmación.
 - **`.gitignore`** excluye secretos, `data/`, y todo CSV, XLSX y PDF.
 - **gitleaks** en pre-commit bloquea commits con algo con forma de clave.
 
-> En Windows, si `python3` no existe, cambia `python3` por `python` en `.claude/settings.json`.
+> `guard.sh` busca `python3`, `python` o `py -3`, así que funciona en Windows sin cambios.
 
 ## Reglas de oro
 
