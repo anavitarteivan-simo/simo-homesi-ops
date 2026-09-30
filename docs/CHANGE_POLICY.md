@@ -83,7 +83,10 @@ call asks for confirmation instead of passing silently. `guard.sh` finds a worki
   Definition: `scripts/github/ruleset-protect-main.json`; apply with
   `scripts/github/apply-ruleset.sh`. Required approvals = 0 while one person maintains the
   repo (GitHub does not let you approve your own PR); raise it to 1 when there is a second
-  maintainer.
+  maintainer. **[Verified] Applied 2026-09-30** to `anavitarteivan-simo/simo-homesi-ops`
+  (ruleset id `24253415`, enforcement `active`, with `--require-checks`: `guard-tests` and
+  `gitleaks` must pass). An older ruleset `Developer` (`24217230`) is `disabled` and targets
+  no branch. Delete it or leave it; it has no effect.
 - **CI** (`.github/workflows/policy.yml`): guard tests + gitleaks on every PR.
 - **`CODEOWNERS`** routes `salesforce/`, `n8n/` and `.claude/` to their owners.
 - **PR template** carries the `/prod-preflight` checklist.
