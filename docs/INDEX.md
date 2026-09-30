@@ -15,7 +15,7 @@ where noted in "Known stale content" below.
 |---|---|
 | What exists in prod today, under which identity, and what breaks when accounts change hands? | `handover/HANDOVER_2026-09-04.md` (live scan 2026-09-04; BigQuery 2026-09-15) |
 | How is the Salesforce org built, and what will bite me? (31 numbered gotchas) | `salesforce/ORG_REFERENCE.md` |
-| Every flow / trigger / scheduled job in the org | `salesforce/AUTOMATION_INVENTORY.md` |
+| Every flow, validation / sharing / duplicate rule, trigger and scheduled job in the org (regenerated 2026-09-29) | `salesforce/AUTOMATION_INVENTORY.md` |
 | What does field X mean? | `salesforce/DATA_DICTIONARY.md` |
 | How is the n8n engine built, and what will bite me? | `n8n/ENGINE_REFERENCE.md` (§0 environment, §2 gotchas) |
 | Customer.io workspaces, segments, sync, gotchas | `customerio/OPERATING_CONTEXT.md` |
