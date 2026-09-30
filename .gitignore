@@ -5,3 +5,6 @@
 *service-account*.json
 .sf/
 .sfdx/
+
+# Local-only working files; may hold borrower/realtor PII (see CLAUDE.md section 5)
+data/
