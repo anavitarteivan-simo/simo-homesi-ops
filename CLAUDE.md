@@ -93,6 +93,7 @@ salesforce/    SFDX project (run sf commands from here) — has its own CLAUDE.m
 n8n/           exported workflow JSON + export script — has its own CLAUDE.md
 data/          local-only working files (git-ignored, may hold PII)
 reports/       dated PDF reports for people (+ src/ HTML) — conventions in reports/README.md
+scripts/       repeatable tooling, by system (e.g. scripts/salesforce/automation-inventory/ regenerates AUTOMATION_INVENTORY.md)
 .claude/       settings, prod-guard hook, commands, skills
 ```
 

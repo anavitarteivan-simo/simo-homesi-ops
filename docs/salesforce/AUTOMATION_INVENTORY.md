@@ -3,7 +3,7 @@
 **Org:** HomeSi (`00DKb000000OvoRMAS`) · production, alias `prod`
 **Sandbox:** `homesi-staging` (`00DEm000008XXK7MAO`) — not inventoried; staging lags prod.
 **Generated:** 2026-09-29 from the live production org, read-only (SOQL/Tooling queries + metadata retrieve).
-**Regenerate with:** the procedure in the appendix. Do not hand-edit the tables; regenerate them.
+**Regenerate with:** `scripts/salesforce/automation-inventory/` (see the appendix). Do not hand-edit this file.
 
 > This is a *descriptive* inventory: what exists, when it fires and what it changes. It covers
 > flows, validation / sharing / duplicate / matching / assignment rules and Apex triggers.
@@ -637,7 +637,11 @@ A failed send rolls back the whole record save (§8.4).
 
 ## Appendix — how to regenerate
 
-All steps are read-only against prod. Work outside the repo (e.g. a temp SFDX project).
+Run [`scripts/salesforce/automation-inventory/`](../../scripts/salesforce/automation-inventory/README.md):
+`./fetch.sh <workDir> prod` then `./run.sh <workDir> docs/salesforce/AUTOMATION_INVENTORY.md`.
+Edit the prose in that folder's `template.md`, the findings in `findings.md` and the
+descriptions of undocumented flows in `purposes.json` — never this file. What the scripts do,
+all read-only against prod:
 
 ```bash
 # 1. Inventory (flows incl. inactive/managed, rules, triggers)

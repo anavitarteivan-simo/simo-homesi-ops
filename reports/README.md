@@ -18,4 +18,5 @@ architecture summaries. They are **snapshots** — the living truth stays in `do
 
 | Date | Report | Summarises |
 |---|---|---|
+| 2026-09-29 | [Incidencia: Owner revertido en loans F30EEP](2026-09-29-incidencia-owner-f30eep.pdf) | `docs/salesforce/ORG_REFERENCE.md` gotcha #31 |
 | 2026-09-29 | [Inventario de automatizaciones de Salesforce](2026-09-29-inventario-automatizaciones-salesforce.pdf) | `docs/salesforce/AUTOMATION_INVENTORY.md` |
