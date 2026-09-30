@@ -94,7 +94,7 @@ and is why notification #2 sometimes never sends.
 | `Loan_Processor_Email__c` | Email | 🔌 | Processor **email** — only **20%** populated. Known integration gap |
 | `Processor_Jr__c` / `Processor_Jr_Text__c` | Lookup(User) / Text | ⚙️🔌 | Junior processor |
 | `Account_Executive__c` | Text(50) | 👤 | With `Affinity_Program__c` drives owner reassignment via Apex |
-| `Parent_Owner_Synced__c` | Text(18) | 🧩 | F30EEP loans only: 18-char Id of the parent (C40EEP) loan owner last applied by `OpportunityUpdater`. The sync re-applies the parent owner only when it differs from this value. No FLS — integration-only; do not edit by hand. Added 2026-09-30 (see `ORG_REFERENCE.md` gotcha #31) |
+| `Parent_Owner_Synced__c` | Text(18) | 🧩 | F30EEP loans only: 18-char Id of the parent (C40EEP) loan owner last applied by `OpportunityUpdater`. The sync re-applies the parent owner only when it differs from this value. No profile FLS — integration-only; do not edit by hand. To read it (SOQL, reports), assign the read-only permission set **`Integration_Fields_Read`** (prod `0AfQg0000023o7BKAQ`; assigned to ianavitarte only as of 2026-09-30). Added 2026-09-30 (see `ORG_REFERENCE.md` gotcha #31) |
 | `Referred_By__c` | Lookup(Contact) | 👤 | Referral origin. Requires `Referred_Date__c` (VR) |
 | `Listing_Agent__c` / `Buyers_Agent__c` | Lookup(Contact) | 🧩 | Set by `OpportunityUpdater`; related lists not on Contact layout |
 
