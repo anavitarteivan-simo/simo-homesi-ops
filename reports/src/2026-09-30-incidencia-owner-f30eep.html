@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Informe de incidencia: Owner revertido en loans F30EEP</title>
+<style>
+  @page { size: Letter; margin: 12mm 14mm 11mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Arial, sans-serif; font-size: 9.2pt; line-height: 1.33; color: #1f2328; margin: 0; }
+  header { border-bottom: 2px solid #1f4e79; padding-bottom: 5px; margin-bottom: 8px; }
+  h1 { font-size: 15pt; margin: 0 0 3px; color: #1f4e79; }
+  .meta { font-size: 8.5pt; color: #57606a; }
+  h2 { font-size: 11pt; color: #1f4e79; margin: 9px 0 3px; border-bottom: 1px solid #d0d7de; padding-bottom: 2px; }
+  p { margin: 3px 0 5px; }
+  ul { margin: 3px 0 5px; padding-left: 17px; }
+  li { margin: 1px 0; }
+  code { font-family: Consolas, "Courier New", monospace; font-size: 8.4pt; background: #f3f4f6; padding: 0 3px; border-radius: 3px; }
+  .summary { background: #eef4fa; border-left: 4px solid #1f4e79; padding: 6px 9px; margin: 6px 0 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 4px 0 6px; font-size: 8.6pt; }
+  th, td { border: 1px solid #d0d7de; padding: 3px 5px; text-align: left; vertical-align: top; }
+  th { background: #f3f6f9; font-weight: 600; }
+  .flow { font-size: 8.8pt; background: #fafbfc; border: 1px dashed #b6c2cf; padding: 5px 8px; margin: 4px 0 6px; }
+  .ok { color: #1a7f37; font-weight: 600; }
+  .warn { color: #9a6700; font-weight: 600; }
+  .muted { color: #57606a; }
+  footer { margin-top: 8px; font-size: 7.8pt; color: #57606a; border-top: 1px solid #d0d7de; padding-top: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Informe de incidencia: el Owner de los loans F30EEP se revertía solo</h1>
+  <div class="meta">Homesi / Simo Solutions Group · Salesforce prod (<code>00DKb000000OvoRMAS</code>) · Autor: Ivan Anavitarte · Fecha: 30-09-2026 ·
+  Reemplaza al informe del 29-09-2026 · Estado: <span class="ok">Resuelto en producción</span> (falta confirmarlo con la próxima carga de Encompass)</div>
+</header>
+
+<div class="summary">
+  <strong>Resumen.</strong> Cuando un usuario reasignaba un loan F30EEP (los "Tule River: …"), el usuario de integración <code>sf integrations</code>
+  lo devolvía al Owner anterior entre 40 y 70 minutos después. La causa era el sync Encompass → Salesforce: en <em>cada</em> carga copiaba el Owner
+  del loan padre. El arreglo definitivo (30-09) mantiene la regla de negocio, <strong>el F30EEP lleva el Owner del padre</strong>, pero solo copia ese Owner
+  <strong>cuando el Owner del padre cambia</strong>. Así, una reasignación manual del F30EEP ya no se pisa. Está desplegado en staging y prod
+  con 27/27 tests en verde, y el código está fusionado en los dos repositorios.
+</div>
+
+<h2>1. Problema</h2>
+<p>Dos loans quedaban siempre a nombre de Giovanni Osorio. Él los pasaba a <code>sf integrations</code> y el sync se los devolvía:</p>
+<table>
+  <tr><th>Loan F30EEP</th><th>Cambio manual (Giovanni → sf integrations)</th><th>Reversión (sf integrations → Giovanni)</th></tr>
+  <tr><td>700002066397</td><td>11-09 14:43 · 17-09 21:53 · 22-09 17:30</td><td>11-09 15:28 · 17-09 22:35 · 22-09 18:36</td></tr>
+  <tr><td>760002073925</td><td>17-09 21:55</td><td>17-09 22:35</td></tr>
+</table>
+<p class="muted">Horas en UTC. No afectaba solo a estos dos: cualquier reasignación manual de un F30EEP se deshacía en la siguiente carga del Excel de Encompass.</p>
+
+<h2>2. Qué es un loan F30EEP</h2>
+<p><code>F30EEP</code> es un código de programa de Encompass. Cada uno de estos loans (el "entity loan", a nombre de una entidad) va enlazado mediante
+<code>GVMT_Human_Guid__c</code> a un loan <strong>padre</strong> del programa C40EEP, que es el loan de la persona (el "human loan"). En prod hay 204 F30EEP (202 de "Tule River")
+y 588 C40EEP. El sync copia datos del padre al F30EEP: Owner, Referred By, State, LOA1 y Sales Agent.
+<span class="muted">El significado comercial del programa todavía no está confirmado con operaciones.</span></p>
+
+<h2>3. Causa</h2>
+<ul>
+  <li><strong>Hipótesis descartada:</strong> el trigger <code>OpportunityAccountExecutiveOwner</code>. Solo actúa si <code>Affinity_Program__c = true</code>, y en estos loans es <code>false</code>.</li>
+  <li><strong>Causa real:</strong> la Lambda <code>supreme-encompass-salesforce</code> busca el padre de cada F30EEP y envía su <code>OwnerId</code>. La clase Apex
+      <code>OpportunityUpdater</code> lo aplicaba en <em>cada</em> carga, no solo al crear el loan.</li>
+  <li><strong>Por qué Giovanni:</strong> es Owner de los dos padres. El 760002056191 se creó a partir de un Lead que ya era suyo, y el 716002059723 se lo asignó él mismo el 31-07.
+      Cada carga le devolvía el F30EEP.</li>
+</ul>
+
+<h2>4. Solución</h2>
+<p><strong>Primera versión (29-09):</strong> ignorar el Owner del sync en loans que ya existen. Evitaba las reversiones, pero el F30EEP dejaba de seguir al padre
+después de crearse, y eso rompía la regla de negocio. <strong>Versión definitiva (30-09):</strong> un campo nuevo,
+<code>Parent_Owner_Synced__c</code>, guarda el último Owner del padre que se aplicó. En cada carga, <code>OpportunityUpdater</code> hace esto:</p>
+<table>
+  <tr><th style="width:44%">Owner del padre que llega en la carga</th><th>Qué hace</th></tr>
+  <tr><td>Es igual al último aplicado (el padre no cambió)</td><td><strong>No toca el Owner</strong>: respeta la reasignación manual. Este era el caso de Giovanni.</td></tr>
+  <tr><td>Es distinto (el padre se reasignó)</td><td>Aplica el nuevo Owner al F30EEP y lo guarda.</td></tr>
+  <tr><td>No hay valor guardado (F30EEP creados antes del 30-09)</td><td>Solo lo guarda, <strong>sin reasignar</strong>. El despliegue no movió a nadie.</td></tr>
+  <tr><td>El usuario que llega está inactivo</td><td>No lo aplica y vuelve a intentarlo en la siguiente carga.</td></tr>
+  <tr><td>Se crea el F30EEP</td><td>Aplica el Owner del padre y lo guarda, igual que antes.</td></tr>
+</table>
+<p>No se cambió la Lambda. Si alguien reasigna el F30EEP y <em>después</em> cambia el Owner del padre, se aplica el del padre.</p>
+
+<h2>5. Cómo se ejecutó</h2>
+<table>
+  <tr><th style="width:27%">Paso</th><th>Resultado (IDs de deploy)</th></tr>
+  <tr><td>Diagnóstico (solo lectura)</td><td>Historial de campos, metadata de triggers y flows, y código del repo del sync. Se confirmó el padre de cada loan y su Owner.</td></tr>
+  <tr><td>Versión 1 (29-09)</td><td>Staging <code>0AfEm00000ZpZQzKAN</code> y prod <code>0AfQg0000023mtNKAQ</code>, 22/22 tests.</td></tr>
+  <tr><td>Campo <code>Parent_Owner_Synced__c</code></td><td>Staging <code>0AfEm00000ZphZpKAJ</code> y prod <code>0AfQg0000023nnpKAA</code>, <span class="ok">created=true</span> en los dos.</td></tr>
+  <tr><td>Clase y tests, versión 2</td><td>Staging <code>0AfEm00000ZphhtKAB</code>, validación en prod <code>0AfQg0000023nr3KAA</code> y quick deploy <code>0AfQg0000023nuHKAQ</code>: <span class="ok">27/27 tests</span>.
+      Se volvió a leer la clase activa después de cada deploy.</td></tr>
+  <tr><td>Acceso de lectura al campo</td><td>Permission set <code>Integration_Fields_Read</code>, solo lectura, prod <code>0AfQg0000023o7BKAQ</code>. Asignado solo al autor.</td></tr>
+  <tr><td>Código y documentación</td><td><code>supreme-encompass-salesforce</code> PR #3 y #4, y <code>simo-homesi-ops</code> PR #1 y #4, todos fusionados. Gotcha #31 en <code>ORG_REFERENCE.md</code> y el campo en <code>DATA_DICTIONARY.md</code>.</td></tr>
+</table>
+
+<h2>6. Estado y pendientes</h2>
+<ul>
+  <li><span class="ok">Resuelto:</span> desde el 30-09 a las 02:33 UTC, un F30EEP solo cambia de Owner cuando cambia el Owner de su padre.</li>
+  <li><span class="warn">Falta confirmarlo con datos reales:</span> en la primera carga de Encompass después del despliegue, los F30EEP de esa carga deberían quedar con el campo relleno
+      y sin ningún cambio de Owner. Hasta el momento no había habido ninguna carga.</li>
+  <li><span class="warn">Riesgo similar sin corregir:</span> Referred By, State, LOA1, Sales Agent y LOA support se siguen copiando del padre en cada carga.
+      Un cambio manual de esos campos en un F30EEP también se revierte.</li>
+  <li><strong>Datos:</strong> los dos loans reportados siguen a nombre de Giovanni, porque el arreglo no reasigna registros. Si se reasignan, el cambio se mantiene.</li>
+  <li><strong>Pregunta para negocio:</strong> confirmar quién debe ser el Owner de un F30EEP. Si no debe ser el Owner del padre, la regla del sync habría que replantearla.</li>
+</ul>
+
+<footer>Detalle técnico: <code>docs/salesforce/ORG_REFERENCE.md</code> (integración de Encompass y gotcha #31) · <code>DATA_MODEL.md</code> del repo <code>supreme-encompass-salesforce</code>.
+Fuente: Salesforce prod y staging, 29 y 30-09-2026.</footer>
+</body>
+</html>
