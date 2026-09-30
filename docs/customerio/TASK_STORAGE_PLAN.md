@@ -1,6 +1,8 @@
 # Customer.io Task storage — reduction plan
 
-**Status:** PLAN, not executed. Drafted 2026-09-30.
+**Status:** PLAN, not executed. Drafted 2026-09-30. **Blocked on a review with the previous developer**
+for hidden business rules: questions in `reports/2026-09-30-revision-tasks-customerio.pdf`.
+Record the answers in §5 and update §0 and §1 before Phase 1.
 **Goal:** stop Salesforce Data Storage from filling up. Customer.io email-event Tasks are the
 main consumer.
 **Covers:** (1) stop writing "Email Sent" Tasks; (3) archive, then hard-delete, the existing
@@ -212,6 +214,7 @@ new Ids and new `CreatedDate` unless "Set Audit Fields upon Record Creation" is 
 | Date | Step | Who | Result / Ids / counts |
 |---|---|---|---|
 | 2026-09-30 | Plan drafted from live reads (§0) | Claude Code session | — |
+| 2026-09-30 | Review report for the previous developer (12 questions) | Ivan Anavitarte | `reports/2026-09-30-revision-tasks-customerio.pdf`, answers pending |
 
 Sources for Recycle Bin and hard-delete behaviour:
 [Salesforce LDV — Deleting Data](https://developer.salesforce.com/docs/platform/salesforce-large-data-volumes-bp/guide/ldv-deployments-techniques-deleting-data.html),
