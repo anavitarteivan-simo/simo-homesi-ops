@@ -18,7 +18,8 @@ architecture summaries. They are **snapshots** — the living truth stays in `do
 
 | Date | Report | Summarises |
 |---|---|---|
-| 2026-10-01 | [Opportunities B2B duplicadas: pares por owner](2026-10-01-oportunidades-b2b-duplicadas.pdf): 58 pares Realtor abiertos | lecturas en vivo de prod (sin doc propietario) |
+| 2026-10-02 | [Opportunities B2B duplicadas que quedan](2026-10-02-oportunidades-b2b-duplicadas-restantes.pdf): 38 pares tras borrar 20 opps de dueños dados de baja, con el último contacto de cada una | `docs/salesforce/CONTACT_OWNERSHIP_AND_DEDUP.md` §9 |
+| 2026-10-01 | ~~Opportunities B2B duplicadas: pares por owner~~ ([pdf](2026-10-01-oportunidades-b2b-duplicadas.pdf)): 58 pares; reemplazado por el del 2026-10-02 | — |
 | 2026-10-02 | [Dueño del Contact sin Opportunity: revisión (corregida)](2026-10-02-owner-contact-sin-opportunity.pdf): opciones y preguntas para Business Development; corrige la regla sobre opps cerradas | `docs/salesforce/CONTACT_OWNERSHIP_AND_DEDUP.md` |
 | 2026-10-01 | ~~Dueño del Contact sin Opportunity: revisión~~ ([pdf](2026-10-01-owner-contact-sin-opportunity.pdf)): dice que una opp cerrada solo la edita un administrador, y es falso; reemplazado por el del 2026-10-02 | — |
 | 2026-09-30 | [Revisión previa: limpieza de Tasks de Customer.io](2026-09-30-revision-tasks-customerio.pdf): preguntas para el desarrollador anterior antes de ejecutar | `docs/customerio/TASK_STORAGE_PLAN.md` |
