@@ -331,8 +331,7 @@ field access was required for activation. It was required to test the SMS flags 
 | 1 | What happened to `Opt_in_Off_Opp` on 2026-09-30 22:53 UTC | corrected, then deactivated / only deactivated | Only documentation; staging already has it active |
 | 2 | Work Item role (`Set_LOA_Work_Item_Agent_Role`): keep? | keep | Tell La Haus to stop expecting LOA2 in Negotiation (already told them the rule) |
 |   |  | change | Change the flow (needs LOA Team Lead sign-off); staging first |
-| 3 | Block a new Lead when a Discarded "don't want to be contacted" Lead exists: keep? | keep | La Haus treats the 400 as "do not contact" and logs it |
-|   |  | change | Compliance decision; no change before it |
+| 3 | ~~Block a new Lead when a Discarded "don't want to be contacted" Lead exists: keep?~~ **DECIDED 2026-10-02: the rule stays; not a question for Melquiadez, only La Haus is informed** | done | See §13.5 |
 | 4 | Duplicate Lead overwrites the original's phone: intended? La Haus to look up by email first? | not intended | Change `DetectDuplicateHandler` (risky: it already had an owner incident); staging first |
 |   |  | intended + vendor lookup | Tell La Haus to add the email lookup |
 | 5 | `Require_Supreme_Loan_Number_on_Negotiation` (staging only): align with prod? | align | Deactivate it in staging via a `FlowDefinition` deploy |
@@ -344,7 +343,13 @@ field access was required for activation. It was required to test the SMS flags 
 | 11 | What 360 did to enable the SMS field; is the Outgoing/Incoming sync needed? | answer | Reply to the 360 ticket (draft already prepared); do not grant Login Access |
 | 12 | Review of PR #10 and #11 | approved | Merge them (separate, confirmed step) |
 
+### 13.5 Decisions taken
+| Date | Decision | Consequence |
+|---|---|---|
+| 2026-10-02 | **Keep the rule** `Search_lead_discarded_Don_t_want_to_be_contacted` (a before-save flow that blocks creating a Lead when a Discarded "Don't want to be contacted" Lead has the same email or phone and the same `Branch__c`). The rule already existed and is not changed. | The business does not need to approve anything. La Haus is told that the 400 (`FIELD_CUSTOM_VALIDATION_EXCEPTION`) is a final answer: do not create the Lead, do not retry, do not update the discarded Lead, and record on their side that the customer must not be contacted. This closes La Haus question 1 in their report; Melquiadez is informed, not asked. |
+
 ### 13.4 Still to do on our side
+- Tell La Haus that the rule stays and how to handle the 400 (§13.5); message drafted.
 - Ask La Haus to re-run the Opportunity route with the opt flows active, and to re-check the opt-out Lead case (same branch
   still returns 400; another branch now creates the Lead). Already drafted; send status unknown.
 - Reply to the 360 ticket (no Login Access; ask what changed and whether the sync is still needed).
