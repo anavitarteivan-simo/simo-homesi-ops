@@ -141,3 +141,33 @@ Done with explicit confirmation, on `--target-org prod`:
 Still open: whether to re-parent the 12 deleted Tasks to the kept Opportunity (they are only
 recoverable from the Recycle Bin until it expires), and why the call integration logged activity
 on the older Opportunity.
+
+## 9. B2B duplicate Opportunity cleanup, owners no longer in the company (2026-10-02)
+
+Requested by the business after the 2026-10-01 report. Done with explicit confirmation on `--target-org prod`.
+
+**Scope.** Strong pairs only (open Opportunities of the same B2B record type sharing at least two of contact, email and
+phone), recomputed from live data. Rule: when exactly one owner of a pair is one of the users reported as gone
+(**Andres Zorro, Danika Piragua, Jairo Sanjuan, Samuel Tirado, Victor Fuentes**, all inactive in Salesforce), delete that
+Opportunity and keep the other. **Camilo Delgado Uribe and Elias Yaber were excluded**: both users are still **active**
+(System Administrator profile) and Camilo logged in on 2026-10-01 [Verified]; their pairs wait for confirmation. The
+decision on history was "delete like the first cleanup": Tasks go with the Opportunity (no re-parenting).
+
+| What | Result |
+|---|---|
+| Opportunities deleted | **20** (Andres Zorro 5, Danika Piragua 8, Jairo Sanjuan 3, Samuel Tirado 4, Victor Fuentes 1). All in the Recycle Bin (about 15 days). Re-read: 0 live, 20 deleted. |
+| Tasks that went with them | 345 (302 by agents, 43 Customer.io events) |
+| Kept Opportunities | 20; owner, stage and account unchanged vs the backup |
+| Contacts aligned with the kept owner | **7** owner changes (one also moved Account); re-read: 7 of 7 as intended |
+| Not aligned | 4 pairs whose kept Opportunity has no primary contact role, so the contact was left alone |
+| Pairs left | **38** of 58, listed in `reports/2026-10-02-oportunidades-b2b-duplicadas-restantes.pdf` with each Opportunity's last agent contact |
+
+**Caution recorded at the time.** In 16 of the 20 pairs the deleted Opportunity had **more agent Tasks** than the kept one (302 agent
+Tasks in total, one Opportunity with 83), and in 8 of the 20 it was **further along** in stage. The business chose to
+keep the active owner's Opportunity regardless. The Tasks are recoverable only from the Recycle Bin, plus the local
+backup (git-ignored, may hold PII) in `data/dup-opp-cleanup-2026-10-02/`.
+
+**Open.** Camilo Delgado Uribe and Elias Yaber are described as having left but are active System Administrators;
+this is an access-review item for the Salesforce admins, not part of this cleanup. The 38 remaining pairs need the
+business to decide per pair (the report shows the last contact).
+
