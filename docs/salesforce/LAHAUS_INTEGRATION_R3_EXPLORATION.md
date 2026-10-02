@@ -329,8 +329,7 @@ field access was required for activation. It was required to test the SMS flags 
 | # | Question sent | If the answer is... | Then |
 |---|---|---|---|
 | 1 | What happened to `Opt_in_Off_Opp` on 2026-09-30 22:53 UTC | corrected, then deactivated / only deactivated | Only documentation; staging already has it active |
-| 2 | Work Item role (`Set_LOA_Work_Item_Agent_Role`): keep? | keep | Tell La Haus to stop expecting LOA2 in Negotiation (already told them the rule) |
-|   |  | change | Change the flow (needs LOA Team Lead sign-off); staging first |
+| 2 | Work Item role (`Set_LOA_Work_Item_Agent_Role`): keep? **REOPENED 2026-10-02:** Melquiadez told La Haus "that is the behaviour, send it, it is with the stage in Negotiation", which contradicts what the org does | **open** | See §13.7 |
 | 3 | ~~Block a new Lead when a Discarded "don't want to be contacted" Lead exists: keep?~~ **DECIDED 2026-10-02: the rule stays; not a question for Melquiadez, only La Haus is informed** | done | See §13.5 |
 | 4 | ~~Duplicate Lead overwrites the original's phone: intended?~~ **DECIDED 2026-10-02 (Melquiadez): it is the designed behaviour, no change** | done | See §13.5. May be revisited later |
 | 5 | `Require_Supreme_Loan_Number_on_Negotiation` (staging only): align with prod? | align | Deactivate it in staging via a `FlowDefinition` deploy |
@@ -367,7 +366,40 @@ field access was required for activation. It was required to test the SMS flags 
   run after conversion, and then reset it; that is a prod validation-rule change for the business to approve and is not worth it
   for a flag that no longer has any effect.
 
+
+### 13.7 Open conflict: Work Item role on an Opportunity (2026-10-02)
+**What La Haus asked.** Their configuration: Work Item on an unconverted Lead sends `Sales Agent`; on a converted Lead it
+sends `LOA2` when the Opportunity `StageName` is Negotiation and `LOA1` for any other stage. They asked whether that is right,
+whether LOA2 should instead depend on Ratified, or whether they should not send the field.
+
+**What Melquiadez answered La Haus (as relayed):** "that is the behaviour, you must send it, it is with the stage in Negotiation."
+
+**What the org does [Verified in staging; the flow is identical in prod]:**
+- `Set_LOA_Work_Item_Agent_Role` is a before-save flow on **create** of a Work Item with `Opportunity__c` set. It overwrites
+  `Agent_Role__c`: name starting `First Touch - LOA1` → LOA1; the Opportunity's `Current_Status__c` = **Ratified** → LOA2;
+  anything else → LOA1. It never reads `StageName`. The automated LOA2 milestone record type is excluded.
+- Tests: LOA2 requested on an Opportunity in Negotiation → stored **LOA1**; LOA1 requested on a Ratified Opportunity → stored
+  **LOA2**; Opportunity Work Item created **without** the role → **LOA1**; Lead Work Item **without** the role → **empty**;
+  Lead Work Item with `Sales Agent` → `Sales Agent`.
+- Reaching Ratified by API needs a loan number (`Require_LoanNumber_For_Update`); Negotiation needs a loan number too.
+
+**Consequence.** If La Haus follows Melquiadez's answer and sends LOA2 in Negotiation, Salesforce stores LOA1 and their final
+test shows a failure.
+
+**Two readings of his answer; not known which:** (a) he believes the org assigns LOA2 in Negotiation (then the evidence above
+corrects it); (b) he wants Negotiation to give LOA2 (then `Set_LOA_Work_Item_Agent_Role` must change). (b) is a change to
+LOA behaviour (workload and SLA), conflicts with the existing LOA1 to LOA2 hand-off at Ratified
+(`Complete_LOA1_Work_Items_On_Ratified`) and needs the LOA Team Lead; staging first.
+
+**Held back from La Haus until aligned:** the "role" item of the clarification message. The rest was drafted and is consistent
+(SMS opt-out field; duplicates; discarded-lead block; re-run the Opportunity route; fixture Lead `00QEm00000gYGzpMAG`). It is
+not known which messages were sent. Message to Melquiadez drafted with the evidence.
+
+**Practical advice for the vendor, whichever way it is resolved:** on a Lead Work Item keep sending `Sales Agent` (nothing
+else sets it); on an Opportunity Work Item the value sent is overwritten.
+
 ### 13.4 Still to do on our side
+- **Waiting for La Haus** to re-run the Opportunity route and the final tests, and for the answer on the Work Item role (§13.7).
 - Tell La Haus that the rule stays and how to handle the 400 (§13.5); message drafted.
 - Ask La Haus to re-run the Opportunity route with the opt flows active, and to re-check the opt-out Lead case (same branch
   still returns 400; another branch now creates the Lead). Already drafted; send status unknown.
