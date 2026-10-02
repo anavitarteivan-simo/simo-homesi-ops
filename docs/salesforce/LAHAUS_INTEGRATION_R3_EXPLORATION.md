@@ -332,11 +332,10 @@ field access was required for activation. It was required to test the SMS flags 
 | 2 | Work Item role (`Set_LOA_Work_Item_Agent_Role`): keep? | keep | Tell La Haus to stop expecting LOA2 in Negotiation (already told them the rule) |
 |   |  | change | Change the flow (needs LOA Team Lead sign-off); staging first |
 | 3 | ~~Block a new Lead when a Discarded "don't want to be contacted" Lead exists: keep?~~ **DECIDED 2026-10-02: the rule stays; not a question for Melquiadez, only La Haus is informed** | done | See §13.5 |
-| 4 | Duplicate Lead overwrites the original's phone: intended? La Haus to look up by email first? | not intended | Change `DetectDuplicateHandler` (risky: it already had an owner incident); staging first |
-|   |  | intended + vendor lookup | Tell La Haus to add the email lookup |
+| 4 | ~~Duplicate Lead overwrites the original's phone: intended?~~ **DECIDED 2026-10-02 (Melquiadez): it is the designed behaviour, no change** | done | See §13.5. May be revisited later |
 | 5 | `Require_Supreme_Loan_Number_on_Negotiation` (staging only): align with prod? | align | Deactivate it in staging via a `FlowDefinition` deploy |
-| 6 | `Bypass_Validation_Rules__c` stays true on converted Leads: keep or reset? | reset | Change `LaHausConvertLead` and its tests; staging first |
-| 7 | La Haus opt-out should also set the SMS opt-out? | yes | Decide who writes `tdc_tsw__SMS_Opt_out__c` (vendor or an org flow) |
+| 6 | ~~`Bypass_Validation_Rules__c` stays true on converted Leads: keep or reset?~~ **DECIDED 2026-10-02 (Melquiadez): reset it after converting** | **to build** | Change `LaHausConvertLead` and its tests; staging first; see §13.5 |
+| 7 | ~~La Haus opt-out should also set the SMS opt-out?~~ **DECIDED 2026-10-02 (Melquiadez): yes, La Haus sends it too** | done | See §13.5; tell La Haus the field works in staging |
 | 8 | Prod go-live date; 6 `LaHaus_*` Lead fields missing in prod | date set | Run `/prod-preflight`; deploy the fields with FLS first (gotchas in `salesforce/CLAUDE.md`) |
 | 9 | Dedicated profile for the integrator (today System Administrator in both orgs) | yes | Plan a profile / permission set; check which flows skip administrators |
 | 10 | Delete the 2 `ZZTEST` prod records (`00QQg00000nHYNdMAO` + its Opportunity `006Qg00000qyMZDIA2`, `00QQg00000nHIxDMAW`) | yes | Prod delete with explicit confirmation; read before deleting |
@@ -347,6 +346,9 @@ field access was required for activation. It was required to test the SMS flags 
 | Date | Decision | Consequence |
 |---|---|---|
 | 2026-10-02 | **Keep the rule** `Search_lead_discarded_Don_t_want_to_be_contacted` (a before-save flow that blocks creating a Lead when a Discarded "Don't want to be contacted" Lead has the same email or phone and the same `Branch__c`). The rule already existed and is not changed. | The business does not need to approve anything. La Haus is told that the 400 (`FIELD_CUSTOM_VALIDATION_EXCEPTION`) is a final answer: do not create the Lead, do not retry, do not update the discarded Lead, and record on their side that the customer must not be contacted. This closes La Haus question 1 in their report; Melquiadez is informed, not asked. |
+| 2026-10-02 | **Duplicate Leads stay as designed** (decision by Melquiadez): inside the same `Branch__c`, the new Lead becomes `-(DUPLICATE)` and Discarded, and the original receives the new Lead's phone. It only applies within the same branch. He suggests re-visiting the behaviour later if it keeps working this way. | No org change. La Haus can still add its own email lookup before creating, but it is not required. Low-priority review item for later. |
+| 2026-10-02 | **Reset `Bypass_Validation_Rules__c` after converting** (decision by Melquiadez). | `LaHausConvertLead` must set the flag back to false after a successful conversion, and `LaHausConvertLeadTest` must cover it. To test in staging first: whether a converted Lead can be updated this way (not verified). The flag was also the "AI-converted" marker, so that marker is lost; `LeadSource = 'La Haus AIA'` and `LaHaus_Conversation_Id__c` remain. The class is already deployed in prod, so prod follows via PR after staging. |
+| 2026-10-02 | **La Haus must also send the SMS opt-out** (`tdc_tsw__SMS_Opt_out__c`) on opt-out (decision by Melquiadez, who believed the field does not work in sandbox until prod). | The field **does** work in staging since 2026-10-02 (§11.7), so La Haus can test it now. The opt flows clear the opt-in when the opt-out is true. |
 
 ### 13.4 Still to do on our side
 - Tell La Haus that the rule stays and how to handle the 400 (§13.5); message drafted.
