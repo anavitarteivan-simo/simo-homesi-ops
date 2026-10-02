@@ -243,6 +243,16 @@ their 8 Work Items) were **not** touched.
 - Melquiadez's pointer: ask 360 SMS support (`support@360degreeapps.zohodesk.com`) how to expose the field.
   [Unverified] whether FLS on this packaged field can instead be granted with a permission set.
 
+## 11.5 Changes applied to `homesi-staging` (change log) [Verified]
+| Date | Change | Ids | Verified by |
+|---|---|---|---|
+| 2026-10-02 | **Aligned flow `Search_lead_discarded_Don_t_want_to_be_contacted` with prod v3** (adds the `Branch__c` filter). New staging version 2 active, v1 `Obsolete`. The error-message link keeps the sandbox host. Two-phase deploy (gotcha #24). | Draft deploy `0AfEm00000Zt2HxKAJ`; activation deploy `0AfEm00000Zt2cvKAB`; active version `301Em00000gxQHvIAM` was v1, now v2 | Re-read the **active** version: lookup logic `(1 OR 2) AND 3 AND 4 AND 5` with `Branch__c`. Behaviour test with `ZZEXPL` leads: same email and same branch → blocked; same email, other branch → allowed (as in prod). Test leads deleted. |
+- **Rollback:** reactivate version 1 (a `FlowDefinition` with `activeVersionNumber` 1, deployed to staging).
+- Metadata and manifests: PR on branch `salesforce/lahaus-staging-flow-alignment`
+  (`salesforce/manifest/lahaus-staging-flow-alignment*.xml`).
+- Not changed: `Opt_in_Off_Opp` and `Opt_In_Off` (still inactive), and `Require_Supreme_Loan_Number_on_Negotiation`
+  (still active in staging only); both wait for answers (see "Not explored yet").
+
 ## 12. Not explored yet
 - Whether reactivating `Opt_in_Off_Opp` / `Opt_In_Off` in staging breaks anything (a metadata change; the
   `tdc_tsw__SMS_Opt_out__c` field is not visible to this user, so the SMS flags could not be tested).
