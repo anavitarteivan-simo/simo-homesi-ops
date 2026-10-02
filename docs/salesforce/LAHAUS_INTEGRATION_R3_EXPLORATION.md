@@ -305,3 +305,48 @@ field access was required for activation. It was required to test the SMS flags 
 - Which of the staging-only and prod-only flows would change a conversion outcome.
 - Contents of `LaHaus_Outbound_Send` and `LaHaus_Note_History_*` flows.
 - Who deactivated or edited the staging flows on 2026-09-30 22:53 UTC (needs Melquiadez).
+
+## 13. Where we stand and how to resume (2026-10-02)
+
+### 13.1 State of `homesi-staging` after this work [Verified]
+- `Search_lead_discarded_Don_t_want_to_be_contacted`: version 2 active (adds the `Branch__c` filter, same as prod v3).
+- `Opt_in_Off_Opp` and `Opt_In_Off`: v1 active again (same logic as prod's v2 / v5).
+- `tdc_tsw__SMS_Opt_out__c` is accessible (see §11.7). 360 SMS support asked for Login Access to the sandbox; it was **not
+  granted** (the sandbox holds unmasked customer data).
+- Not changed on purpose: `Require_Supreme_Loan_Number_on_Negotiation` (active in staging only).
+- Fixture left **for La Haus**, do not delete: Lead `00QEm00000gYGzpMAG` ("Pruebas LaHaus AIA E"), converted with **no
+  Opportunity**, phone +1 305 555 0199 (`Phone_360SMS__c` = `13055550199`), Contact `003Em00001Sl2nJIAR`, Account
+  `001Em00001iG9ezIAC`. No open Opportunity has that phone, so the vendor's open-Opportunity lookup returns nothing.
+- Our `ZZEXPL` test records were all deleted. The vendor's own test records (7 Leads, their Work Items and the new
+  Lead D / Opportunity D set from their 2026-10-02 run) stay until they say.
+
+### 13.2 Open PRs
+- #10 `salesforce/lahaus-staging-flow-alignment`: the staging flow metadata (Search flow v2, opt flows activation). Already
+  deployed to staging; the PR is the record. Not for prod as-is (the flow file is committed as `Draft`).
+- #11 `docs/lahaus-r3-followup`: this doc's follow-up. Neither is merged.
+
+### 13.3 Waiting for answers (all routed through Melquiadez; he escalates if needed)
+| # | Question sent | If the answer is... | Then |
+|---|---|---|---|
+| 1 | What happened to `Opt_in_Off_Opp` on 2026-09-30 22:53 UTC | corrected, then deactivated / only deactivated | Only documentation; staging already has it active |
+| 2 | Work Item role (`Set_LOA_Work_Item_Agent_Role`): keep? | keep | Tell La Haus to stop expecting LOA2 in Negotiation (already told them the rule) |
+|   |  | change | Change the flow (needs LOA Team Lead sign-off); staging first |
+| 3 | Block a new Lead when a Discarded "don't want to be contacted" Lead exists: keep? | keep | La Haus treats the 400 as "do not contact" and logs it |
+|   |  | change | Compliance decision; no change before it |
+| 4 | Duplicate Lead overwrites the original's phone: intended? La Haus to look up by email first? | not intended | Change `DetectDuplicateHandler` (risky: it already had an owner incident); staging first |
+|   |  | intended + vendor lookup | Tell La Haus to add the email lookup |
+| 5 | `Require_Supreme_Loan_Number_on_Negotiation` (staging only): align with prod? | align | Deactivate it in staging via a `FlowDefinition` deploy |
+| 6 | `Bypass_Validation_Rules__c` stays true on converted Leads: keep or reset? | reset | Change `LaHausConvertLead` and its tests; staging first |
+| 7 | La Haus opt-out should also set the SMS opt-out? | yes | Decide who writes `tdc_tsw__SMS_Opt_out__c` (vendor or an org flow) |
+| 8 | Prod go-live date; 6 `LaHaus_*` Lead fields missing in prod | date set | Run `/prod-preflight`; deploy the fields with FLS first (gotchas in `salesforce/CLAUDE.md`) |
+| 9 | Dedicated profile for the integrator (today System Administrator in both orgs) | yes | Plan a profile / permission set; check which flows skip administrators |
+| 10 | Delete the 2 `ZZTEST` prod records (`00QQg00000nHYNdMAO` + its Opportunity `006Qg00000qyMZDIA2`, `00QQg00000nHIxDMAW`) | yes | Prod delete with explicit confirmation; read before deleting |
+| 11 | What 360 did to enable the SMS field; is the Outgoing/Incoming sync needed? | answer | Reply to the 360 ticket (draft already prepared); do not grant Login Access |
+| 12 | Review of PR #10 and #11 | approved | Merge them (separate, confirmed step) |
+
+### 13.4 Still to do on our side
+- Ask La Haus to re-run the Opportunity route with the opt flows active, and to re-check the opt-out Lead case (same branch
+  still returns 400; another branch now creates the Lead). Already drafted; send status unknown.
+- Reply to the 360 ticket (no Login Access; ask what changed and whether the sync is still needed).
+- 3 Work Items on `TypeTest Interest` are FUR tests by Melquiadez (`a1IEm00000AK0KfMAL`, `APR7SMAX`, `AQdETMA1`); not ours.
+- If La Haus later asks for an open Opportunity with the fixture's phone, create it with `Phone__c` = `+13055550199`.
