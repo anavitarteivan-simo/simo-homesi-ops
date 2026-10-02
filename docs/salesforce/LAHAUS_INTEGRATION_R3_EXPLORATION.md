@@ -212,6 +212,19 @@ rule in prod as well as in staging.
 Bin). Only the records above were deleted. SLTeam's own test records (7 Leads including `TypeTest Interest`, and
 their 8 Work Items) were **not** touched.
 
+### 11.3b Cleanup the vendor asked for (report §15, points 4 and 5) [Verified 2026-10-02]
+- **Point 4 (required) — done on 2026-10-02:** the 4 Work Items created by the vendor on `TypeTest Interest`
+  (`006Em00000ol6htIAA`) were deleted: `a1IEm00000AknRNMAZ`, `a1IEm00000AknUbMAJ`, `a1IEm00000AknXpMAJ`,
+  `a1IEm00000AknZRMAZ` (all created 2026-09-29, role LOA1, owner Melquiadez Rodriguez). Re-read: the 4 are in the
+  Recycle Bin, and the Opportunity and its Lead are unchanged (same `LastModifiedDate`, Lead still converted).
+- **3 other Work Items remain on that Opportunity and were not touched** (not part of the request, not
+  vendor-created): `a1IEm00000AK0KfMAL` ("TEST-G2 Control on converted Opp", 2026-08-13),
+  `a1IEm00000APR7SMAX` ("AI Follow-Up - FUR-REACT-OPP", 2026-08-18) and `a1IEm00000AQdETMA1`
+  ("AI Follow-Up - FUR-AMSS2BUFO0", 2026-08-19), all created by Melquiadez Rodriguez.
+- **Point 5 (optional) — not done on purpose:** the vendor's 6 Leads and 4 Lead-linked Work Items stay, because the
+  vendor said it may want them for the next round (and they hold useful cases: the opt-out Lead and the duplicate
+  pair). To be confirmed with the vendor.
+
 ### 11.4 The `tdc_tsw__SMS_Opt_out__c` field (360 SMS package) [Verified 2026-10-01]
 - The field **exists** on Lead, Opportunity and Contact in **both** staging and prod (Tooling API
   `CustomField`, namespace `tdc_tsw`; the same 15 package fields on the three objects in each org).
