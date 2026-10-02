@@ -40,6 +40,7 @@ where noted in "Known stale content" below.
 | 2-day Opportunity-save outage — why entry criteria must use `RecordTypeId` | `salesforce/PROD_OUTAGE_RCA_2DAY.md` |
 | Who can own a Contact, how Contacts are created / converted, and what does (not) stop duplicates (2026-10-01) | `salesforce/CONTACT_OWNERSHIP_AND_DEDUP.md` |
 | B2B Opportunity duplicate guard, rules A + B (design only, awaiting Business Owner, 2026-10-01) | `salesforce/B2B_OPP_DUPLICATE_GUARD_DESIGN.md` |
+| La Haus AIA integration, round 3 test results: what fails, why, and staging-vs-prod differences (exploration, 2026-10-01) | `salesforce/LAHAUS_INTEGRATION_R3_EXPLORATION.md` |
 | Lead imports (Data Import Wizard) | `salesforce/LEAD_IMPORT.md` |
 | Recruitment copilot (MMI + NMLS) | `salesforce/RECRUITMENT_COPILOT.md` |
 | Latino name likelihood | `salesforce/LATINO_NAME_RUNBOOK.md` |

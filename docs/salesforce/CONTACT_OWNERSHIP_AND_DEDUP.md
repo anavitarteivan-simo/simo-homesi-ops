@@ -8,7 +8,7 @@ Tags: **[Verified]** read live on the date shown · **[Likely]** strong inferenc
 **[Unverified]** not checked.
 
 Raised 2026-10-01 after Production reported a duplicate Opportunity. A summary for Business
-Development is in `reports/2026-10-01-owner-contact-sin-opportunity.pdf` (see
+Development is in `reports/2026-10-02-owner-contact-sin-opportunity.pdf` (see
 `reports/README.md`); this file is the living version.
 
 ---
@@ -41,10 +41,14 @@ Nothing in the org ties them together. [Verified 2026-10-01]
 - `Contact.Contact_All_Internal_Read` sharing rule exists with **Edit** access for all internal
   users. Dormant while Contact stays Controlled by Parent [Likely]; it would take effect if the
   Contact OWD is ever changed. Tracked in `AUTOMATION_INVENTORY.md` §7.2.
-- A closed Opportunity (Closed Won / Closed Lost) cannot be modified except by a System
-  Administrator (`Prevent_Changes_Closed_Opportunity`). Closing a duplicate is therefore not
-  reversible for an agent. Deleting an Opportunity sends it, and its Tasks, to the Recycle Bin
-  (about 15 days to undelete).
+- **Correction 2026-10-01:** an earlier version of this file said a closed Opportunity can only be
+  edited by a System Administrator. That is **wrong**: the validation rule
+  `Prevent_Changes_Closed_Opportunity` exists but is **inactive** in both prod and `homesi-staging`
+  (prod rule last modified 2025-05-14) [Verified]. Its formula would exempt System Administrators, but it does
+  not run. `AUTOMATION_INVENTORY.md` §4.1 lists it with Active = no.
+- Moving a closed Opportunity backwards is reverted by the flow `Reset_stage_by_hierarchy`, per
+  `AUTOMATION_INVENTORY.md` [not re-verified live].
+- Deleting an Opportunity sends it, and its Tasks, to the Recycle Bin (about 15 days to undelete).
 
 ## 3. How a Contact is created
 
