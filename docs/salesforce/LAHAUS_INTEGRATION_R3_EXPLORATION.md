@@ -15,6 +15,11 @@ were read live on 2026-10-01 from `homesi-staging` (org `00DEm000008XXK7MAO`) an
 | ◐ partial | 6 — Work Item is created, the Opportunity update fails |
 | ⚠ pending | 3 — new Lead with the email of an opt-out Lead, new Lead with the email of an active Lead, profile on Opportunity |
 
+**Status update 2026-10-02:** 25 of the 27 scenarios are now confirmed working. The 13 ✔ rows from the report plus
+the 12 that were reported back to La Haus as resolved (5 ✘, 6 ◐ and the ⚠ "profile on Opportunity"), which La Haus
+validated again (§11.6). Still open: the 2 other ⚠ rows (email of an opt-out Lead, email of an active Lead), which
+depend on business decisions.
+
 Reported root cause for the ✘ / ◐ rows: flow `Opt_in_Off_Opp` rejects every Opportunity insert/update
 with `CANNOT_EXECUTE_FLOW_TRIGGER` ("Syntax error. Missing ')'"), which also aborts lead conversion
 (Apex REST 422 and native `convertLead`). The Opportunity PATCH was reported fixed on 2026-09-30.
@@ -252,6 +257,21 @@ their 8 Work Items) were **not** touched.
   (`salesforce/manifest/lahaus-staging-flow-alignment*.xml`).
 - Not changed: `Opt_in_Off_Opp` and `Opt_In_Off` (still inactive), and `Require_Supreme_Loan_Number_on_Negotiation`
   (still active in staging only); both wait for answers (see "Not explored yet").
+
+## 11.6 La Haus re-validation [relayed by the team, 2026-10-02]
+- We told La Haus that the Opportunity route and "Visita agendada" on Lead could be re-validated, based on the
+  staging write tests in §11 (conversion 200 with `alreadyConverted: false`; Opportunity updates passing).
+- **La Haus replied that the scenarios reported as resolved passed.** That is **12 scenarios**: Lead converted →
+  Opportunity; first message (Opportunity); profile (Opportunity); advisor, not interested and conversation finished
+  (Opportunity, 3); unreachable (Opportunity); opt-out (Opportunity); and "Visita agendada" creation and reschedule on
+  Lead and on Opportunity (4).
+- Earlier message said "13 of the 14"; the correct count is **12 of the 14** non-green scenarios. The other 2 are the
+  ⚠ rows in §3, which are still open.
+- Source: the reply was relayed by the team; there is no new La Haus report document, so the details of their run
+  (payloads, ids) were not seen [Unverified beyond the confirmation].
+- **Still open, not part of the confirmation:** email of an opt-out Lead (Compliance), email of an active Lead
+  (Business Owner), the Work Item role LOA2 in Negotiation (LOA Team Lead; the org sets the role, and Negotiation needs
+  a loan number). Consultations C1 to C6 in the plan were drafted and are pending answers.
 
 ## 12. Not explored yet
 - Whether reactivating `Opt_in_Off_Opp` / `Opt_In_Off` in staging breaks anything (a metadata change; the
