@@ -171,3 +171,42 @@ backup (git-ignored, may hold PII) in `data/dup-opp-cleanup-2026-10-02/`.
 this is an access-review item for the Salesforce admins, not part of this cleanup. The 38 remaining pairs need the
 business to decide per pair (the report shows the last contact).
 
+
+### 9.1 Plan for the 38 remaining pairs (written 2026-10-02, **not executed**; resume when the business answers)
+Salesforce cannot merge Opportunities (only Leads, Contacts and Accounts). Resolving a pair means keeping one
+Opportunity, moving its history to it, and deleting or closing the other. Unlike the first two cleanups, this plan
+**re-parents the Tasks** of the Opportunity that goes away to the one that stays, so no agent history is lost.
+
+**A. Pairs with the same active owner (7). The owner is the same, so there is no ownership conflict.**
+| Owner | Keep | Drop | Why |
+|---|---|---|---|
+| Josue Toro | `006Qg00000NvGlxIAF` (22 agent Tasks) | `006Qg00000WcY9XIAV` (2) | more history; same Account |
+| Josue Toro | `006Kb00000KusvgIAB` (15) | `006Qg00000QJ3ODIA1` (0, Qualification) | the other is empty |
+| Giovanni Osorio | `006Kb00000Kusw4IAB` (11) | `006Qg00000qX5UPIA0` (0, Needs Analysis) | the other is empty |
+| Giovanni Osorio | `006Qg00000QxFyXIAV` (10) | `006Qg00000qk0NGIAY` (1, Qualification) | more history, further along |
+| Annie Garrido | `006Qg00000Lrtn3IAB` | `006Qg00000XkbJKIAZ` | same Task count; the first has the latest contact |
+| Annie Garrido | `006Qg00000KPdihIAD` (15) vs `006Qg00000g7ys7IAA` (6, latest contact) | **the owner decides** | both Negotiation |
+| Belkys Armesto | `006Qg00000Of9PjIAJ` vs `006Qg00000nyVazIAE` | **the owner decides** | one is further along, the other has the latest contact |
+The first five rows are clear suggestions by stage and last agent contact; they still need the go-ahead.
+
+**B. Pairs with an inactive owner (3).** Danika Piragua with Samuel Tirado (`006Qg00000QMcdyIAD`, `006Qg00000XgxtVIAR`) and Samuel
+Tirado with Victor Fuentes (`006Qg00000VCSJhIAP`, `006Qg00000XgeMEIAZ`): both owners are inactive, so first decide **which
+active agent takes the Opportunity that stays**. Danika with Camilo Delgado Uribe (`006Qg00000eDGHdIAO`, `006Kb00000KuszjIAB`)
+and Elias Yaber with Josue Toro wait for the confirmation that Camilo and Elias have left (both users are still active).
+
+**C. The other 27 pairs** have two different active owners: the business picks the Opportunity to keep (the report shows
+the last agent contact), and the same procedure applies.
+
+**Procedure per pair (staging does not apply: data in prod).**
+1. Re-read both Opportunities live (open, owner, stage unchanged since the report).
+2. Back up both Opportunities, their Tasks and contact roles to the git-ignored `data/`.
+3. Re-parent the agent Tasks from the dropped Opportunity to the kept one (decide separately about the Customer.io event
+   Tasks, which the storage plan will remove anyway) and, when the primary contacts differ, add the dropped one's contact as an
+   extra role on the kept Opportunity.
+4. Delete the dropped Opportunity (Recycle Bin, about 15 days).
+5. Align the contact owner (and Account) with the kept Opportunity, as in section 9.
+6. Re-read and confirm: dropped = deleted, kept = unchanged except the added Tasks, Task counts add up.
+7. Update this section and the report; every change through a PR.
+
+**Separate item, not part of the cleanup:** Camilo Delgado Uribe and Elias Yaber are described as having left but are active
+System Administrators; this is an access review for the Salesforce admins.
