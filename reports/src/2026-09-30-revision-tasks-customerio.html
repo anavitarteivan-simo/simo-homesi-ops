@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Revisión previa: limpieza de Tasks de Customer.io en Salesforce</title>
+<style>
+  @page { size: Letter; margin: 9mm 13mm 8mm 13mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Arial, sans-serif; font-size: 9pt; line-height: 1.3; color: #1f2328; margin: 0; }
+  header { border-bottom: 2px solid #1f4e79; padding-bottom: 5px; margin-bottom: 8px; }
+  h1 { font-size: 15pt; margin: 0 0 3px; color: #1f4e79; }
+  .meta { font-size: 8.5pt; color: #57606a; }
+  h2 { font-size: 11pt; color: #1f4e79; margin: 9px 0 3px; border-bottom: 1px solid #d0d7de; padding-bottom: 2px; }
+  h3 { font-size: 9.6pt; margin: 7px 0 2px; color: #1f2328; }
+  p { margin: 3px 0 5px; }
+  ul, ol { margin: 3px 0 5px; padding-left: 17px; }
+  li { margin: 1px 0; }
+  code { font-family: Consolas, "Courier New", monospace; font-size: 8.4pt; background: #f3f4f6; padding: 0 3px; border-radius: 3px; }
+  .summary { background: #eef4fa; border-left: 4px solid #1f4e79; padding: 6px 9px; margin: 6px 0 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 4px 0 6px; font-size: 8.6pt; }
+  th, td { border: 1px solid #d0d7de; padding: 3px 5px; text-align: left; vertical-align: top; }
+  th { background: #f3f6f9; font-weight: 600; }
+  td.n { text-align: right; white-space: nowrap; }
+  .q { counter-reset: q; list-style: none; padding-left: 0; }
+  .q > li { counter-increment: q; margin: 0 0 3px; padding: 3px 7px 3px 30px; position: relative; border: 1px solid #e3e8ee; border-radius: 4px; background: #fbfcfd; page-break-inside: avoid; }
+  .q > li::before { content: counter(q); position: absolute; left: 7px; top: 4px; width: 17px; height: 17px; border-radius: 50%; background: #1f4e79; color: #fff; font-size: 8pt; font-weight: 600; text-align: center; line-height: 17px; }
+  .why { color: #57606a; font-size: 8.2pt; display: block; margin-top: 1px; }
+  .ans { display: block; margin-top: 2px; border-bottom: 1px dotted #b6c2cf; height: 11px; }
+  .ok { color: #1a7f37; font-weight: 600; }
+  .warn { color: #9a6700; font-weight: 600; }
+  .muted { color: #57606a; }
+  footer { margin-top: 8px; font-size: 7.8pt; color: #57606a; border-top: 1px solid #d0d7de; padding-top: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Revisión previa: limpieza de las Tasks de Customer.io en Salesforce</h1>
+  <div class="meta">Homesi / Simo Solutions Group · Salesforce prod (<code>00DKb000000OvoRMAS</code>) · Customer.io 164380 y 224311 ·
+  Autor: Ivan Anavitarte · Fecha: 30-09-2026 · Para: reunión con el desarrollador anterior ·
+  Estado: <span class="warn">Plan escrito, sin ejecutar</span></div>
+</header>
+
+<div class="summary">
+  <strong>Por qué esta reunión.</strong> El almacenamiento de datos de Salesforce está al <strong>82.7%</strong> y a este ritmo se llena entre
+  diciembre de 2026 y enero de 2027. Cuando se llena, Salesforce deja de crear Leads, Opportunities y Tasks. La mitad del espacio lo ocupan
+  <strong>2.5 millones de Tasks</strong> que Customer.io escribe por cada evento de email. Tenemos un plan para frenarlo y liberar espacio,
+  pero el paso final (borrado definitivo) <strong>no se puede deshacer</strong>. Antes de ejecutarlo queremos confirmar contigo que no hay
+  una regla de negocio, un reporte o un proceso externo que dependa de esas Tasks y que no aparezca en los datos.
+</div>
+
+<h2>1. Situación (leída en vivo de prod el 30-09-2026)</h2>
+<table>
+  <tr><th>Dato</th><th>Valor</th></tr>
+  <tr><td>Almacenamiento de datos usado</td><td>9,763 de 11,800 MB (82.7%). Crece unos 600 MB al mes desde julio de 2026.</td></tr>
+  <tr><td>Tasks de Customer.io</td><td><strong>2,506,092</strong>, unos 4,900 MB (≈ 50% de lo usado). Creadas por <code>sf integrations</code>,
+      propietario el usuario "Team Marketing city" (<code>005Kb00000B1ZEtIAN</code>), todas en estado <strong>Open</strong>.</td></tr>
+</table>
+<table>
+  <tr><th>Evento (<code>Subtype__c</code>)</th><th class="n">Tasks</th><th>Evento</th><th class="n">Tasks</th></tr>
+  <tr><td><strong>Email Sent</strong></td><td class="n"><strong>1,941,498</strong></td><td>Email Failed</td><td class="n">66,477</td></tr>
+  <tr><td>Email Opened</td><td class="n">368,555</td><td>Email Unsubscribed</td><td class="n">8,696</td></tr>
+  <tr><td>Email Link Clicked</td><td class="n">120,706</td><td>Email Marked as Spam</td><td class="n">161</td></tr>
+</table>
+<p class="muted">Tasks creadas por mes (todas las de <code>sf integrations</code>): abr-2026 399,941 · jul 253,521 · ago 327,808 · sep 296,284.</p>
+
+<h2>2. Plan propuesto (detalle en <code>docs/customerio/TASK_STORAGE_PLAN.md</code>)</h2>
+<table>
+  <tr><th style="width:24%">Fase</th><th>Qué hace</th><th style="width:22%">Efecto</th></tr>
+  <tr><td>1. Dejar de crear "Email Sent"</td><td>Desactivar (no borrar) las 4 suscripciones de "Email Sent" en Customer.io: Lead y Opportunity, en los workspaces 164380 y 224311.
+      Los demás eventos se siguen escribiendo. Reversible.</td><td>Crecimiento: de ~600 a ~140 MB/mes</td></tr>
+  <tr><td>2. Archivar</td><td>Exportar las 2.5 M Tasks y cargarlas en una tabla de archivo en BigQuery. Verificar conteos antes de seguir.</td><td>Única vía de recuperación</td></tr>
+  <tr><td>3. Borrado definitivo</td><td>Borrar por lotes mensuales todas las "Email Sent" y los demás eventos de más de 12 meses. Se conservan todos los "Unsubscribed".</td><td>Libera ~3,800 MB → ~50% de uso</td></tr>
+</table>
+
+<h2>3. Lo que ya revisamos y no depende de estas Tasks</h2>
+<ul>
+  <li><span class="ok">Opt-out.</span> El flow <code>Notify_Task_EmailOpened_Status</code> solo reacciona a "Email Unsubscribed", que se mantiene.</li>
+  <li><span class="ok">Última actividad del Lead.</span> Las Tasks están en estado Open, y <code>LastActivityDate</code> solo cuenta Tasks cerradas.</li>
+  <li><span class="ok">First touch, SLA, llamadas y Zoom.</span> Sus flows excluyen a administradores o filtran por Call/SMS.</li>
+  <li><span class="warn">Un efecto que no entendemos:</span> <code>Update_Lead_Status_When_Task_Created</code> pasa a "Working" un Lead en "New"
+      si el dueño del Lead es quien creó la Task. Como Customer.io crea las Tasks como <code>sf integrations</code>, cada email mueve a "Working"
+      los Leads nuevos cuyo dueño es <code>sf integrations</code> (hoy hay 106 en "New"). Ver pregunta 4.</li>
+  <li><span class="warn">BigQuery no sirve de respaldo.</span> <code>salesforce.Task</code> se reemplaza entero cada día, así que lo que se borre en Salesforce desaparece también allí.</li>
+</ul>
+
+<h2>4. Preguntas para ti</h2>
+
+<h3>Para qué existen estas Tasks</h3>
+<ol class="q">
+  <li>¿Por qué se decidió registrar <strong>cada</strong> evento de email como una Task? ¿Alguien consulta hoy las "Email Sent": agentes en el
+      timeline del Lead, reportes, dashboards, list views?
+      <span class="why">Si nadie las mira, la fase 1 no tiene coste. Si un equipo las usa, hay que avisarle o darle otra fuente, como Customer.io.</span><span class="ans"></span></li>
+  <li>¿Existe algún requisito legal o de cumplimiento (Supreme Lending, TCPA, CAN-SPAM, auditorías) de <strong>conservar dentro de Salesforce</strong> la
+      evidencia de cada email enviado? ¿Durante cuánto tiempo?
+      <span class="why">Define qué se puede borrar (decisión D2) y si basta con que el archivo esté en BigQuery.</span><span class="ans"></span></li>
+  <li>¿Por qué quedan en estado <strong>Open</strong> y a nombre de "Team Marketing city"? ¿Algo cuenta o asigna las Tasks abiertas de ese usuario?
+      <span class="why">Son 2.5 M Tasks abiertas; cualquier proceso que recorra "tareas abiertas" las incluye.</span><span class="ans"></span></li>
+</ol>
+
+<h3>Reglas de negocio que podrían estar escondidas</h3>
+<ol class="q" start="4" style="counter-reset: q 3">
+  <li>¿Es intencional que una Task de Customer.io pase un Lead de "New" a "Working" cuando el dueño es <code>sf integrations</code>? ¿Se usa como señal de
+      "Lead contactado"? ¿Por qué ese flow excluye dos asuntos concretos ("6 ventajas competitivas…", "Las 7 herramientas de HOMESÍ…")?
+      <span class="why">Al quitar "Email Sent", un Lead nuevo solo pasará a "Working" cuando abra o haga clic, no cuando se le envía el email.</span><span class="ans"></span></li>
+  <li>¿Algún proceso <strong>fuera de Salesforce</strong> lee estas Tasks por API? Por ejemplo Make (enriquecimiento <code>AI_*</code>), n8n, las Lambdas
+      (lambda-bridge / LeadView), las apps de Lovable o SimoOS, o algún dashboard externo.
+      <span class="why">No aparece en el inventario de automatizaciones de Salesforce; solo tú puedes saberlo.</span><span class="ans"></span></li>
+  <li>¿Algún scoring, asignación (round-robin, <code>AssignmentRecord.ValidationTask</code>), comisión o KPI cuenta Tasks de email por Lead o por agente?
+      <span class="why">Borrar el histórico cambiaría esos números hacia atrás.</span><span class="ans"></span></li>
+  <li>El workspace de Simo (224311) replica las mismas 14 suscripciones. ¿Hay algún motivo del BPO para mantener allí "Email Sent"?
+      <span class="why">El plan las desactiva en los dos workspaces.</span><span class="ans"></span></li>
+</ol>
+
+<h3>Datos, historia y archivo</h3>
+<ol class="q" start="8" style="counter-reset: q 7">
+  <li>¿Qué pasó en <strong>abril de 2026</strong> (400 mil Tasks en un mes) y desde julio? ¿Campañas nuevas, un backfill, o eventos <strong>duplicados</strong>?
+      <span class="why">Si hay duplicados, el problema es de configuración y hay que corregirlo aparte.</span><span class="ans"></span></li>
+  <li>BigQuery tenía 2.72 M Tasks cuando Salesforce tenía 3.28 M. ¿El transfer filtra algo a propósito? ¿Alguna vista de <code>home_si</code> o SimoOS usa los eventos de email?
+      <span class="why">Hay que avisar a esos consumidores antes del borrado.</span><span class="ans"></span></li>
+  <li>¿Se hizo antes algún borrado masivo o un job de retención de Tasks? ¿Algún trigger o paquete (por ejemplo el <code>TaskTrigger</code> de Zoom) hace algo al borrar Tasks?
+      <span class="why">El borrado definitivo necesita un permiso que hoy nadie tiene; queremos saber si ya se intentó y qué falló.</span><span class="ans"></span></li>
+  <li>¿Dónde conviene guardar el archivo y quién debería ser su dueño? Hoy BigQuery pertenece a cuentas de <code>simologic.com</code>.
+      <span class="why">Decisión D3 del plan.</span><span class="ans"></span></li>
+  <li>¿Se evaluó alguna vez comprar más almacenamiento, o hay algo acordado con Supreme sobre los límites de la org?
+      <span class="why">Es la alternativa si alguna respuesta anterior impide borrar.</span><span class="ans"></span></li>
+</ol>
+
+<h2>5. Qué haremos con las respuestas</h2>
+<ul>
+  <li>Cerrar las decisiones D1–D5 del plan y anotarlas con fecha en <code>TASK_STORAGE_PLAN.md</code>.</li>
+  <li>Si aparece una dependencia nueva, añadirla a la tabla "What depends on these Tasks" del plan antes de ejecutar nada.</li>
+  <li>Si no hay objeciones: fase 1 esta semana; fases 2 y 3 en las dos semanas siguientes, con confirmación explícita en cada paso en prod.</li>
+</ul>
+
+<footer>
+  Fuentes: consultas SOQL de solo lectura en Salesforce prod (30-09-2026); metadata activa de los flows de Task; <code>docs/customerio/SUBSCRIPTION_REDESIGN.md</code>;
+  <code>docs/handover/HANDOVER_2026-09-04.md</code>. Plan completo: <code>docs/customerio/TASK_STORAGE_PLAN.md</code>. Este informe no contiene datos de prestatarios.
+</footer>
+
+</body>
+</html>
