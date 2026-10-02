@@ -208,7 +208,9 @@ rule in prod as well as in staging.
 | Lead | `00QEm00000gWF3lMAG` (converted), `00QEm00000gWFWnMAO` (Discarded opt-out), `00QEm00000gWFYPMA4`, `00QEm00000gWFa1MAG` (duplicate pair), `00QEm00000gWFbdMAG` (converted, no Opportunity) |
 | Contact / Account (from conversions) | `003Em00001ShB6GIAV` / `001Em00001iClhuIAC`, `003Em00001ShXL3IAN` / `001Em00001iD3vtIAC` |
 | Work Item | `a1IEm00000AlRrpMAF`, `a1IEm00000AlRtRMAV`, `a1IEm00000AlRv3MAF` |
-Not deleted yet.
+**Deleted 2026-10-02** (all 14 records; re-read afterwards: 0 live `ZZEXPL` rows; they sit in the staging Recycle
+Bin). Only the records above were deleted. SLTeam's own test records (7 Leads including `TypeTest Interest`, and
+their 8 Work Items) were **not** touched.
 
 ### 11.4 The `tdc_tsw__SMS_Opt_out__c` field (360 SMS package) [Verified 2026-10-01]
 - The field **exists** on Lead, Opportunity and Contact in **both** staging and prod (Tooling API
