@@ -252,11 +252,12 @@ their 8 Work Items) were **not** touched.
 | Date | Change | Ids | Verified by |
 |---|---|---|---|
 | 2026-10-02 | **Aligned flow `Search_lead_discarded_Don_t_want_to_be_contacted` with prod v3** (adds the `Branch__c` filter). New staging version 2 active, v1 `Obsolete`. The error-message link keeps the sandbox host. Two-phase deploy (gotcha #24). | Draft deploy `0AfEm00000Zt2HxKAJ`; activation deploy `0AfEm00000Zt2cvKAB`; active version `301Em00000gxQHvIAM` was v1, now v2 | Re-read the **active** version: lookup logic `(1 OR 2) AND 3 AND 4 AND 5` with `Branch__c`. Behaviour test with `ZZEXPL` leads: same email and same branch → blocked; same email, other branch → allowed (as in prod). Test leads deleted. |
-- **Rollback:** reactivate version 1 (a `FlowDefinition` with `activeVersionNumber` 1, deployed to staging).
+| 2026-10-02 | **Reactivated `Opt_in_Off_Opp` (Opportunity) and `Opt_In_Off` (Lead) in staging** (B1). Both had one version (v1, `Obsolete`); their logic is identical to prod's active v2 / v5 (compared after dropping layout-only keys; the only differences were empty lists vs absent keys). Before-save, assignments only, no external calls. | Activation deploy `0AfEm00000ZtITCKA3` | Re-read: both `IsActive = true`, v1 `Active`. Behaviour: see §11.7. |
+- **Rollback of the Search flow change:** reactivate version 1 (a `FlowDefinition` with `activeVersionNumber` 1, deployed to staging).
+- **Rollback of B1:** deploy a `FlowDefinition` for each opt flow that leaves no active version (or deactivate in Setup).
 - Metadata and manifests: PR on branch `salesforce/lahaus-staging-flow-alignment`
   (`salesforce/manifest/lahaus-staging-flow-alignment*.xml`).
-- Not changed: `Opt_in_Off_Opp` and `Opt_In_Off` (still inactive), and `Require_Supreme_Loan_Number_on_Negotiation`
-  (still active in staging only); both wait for answers (see "Not explored yet").
+- Not changed: `Require_Supreme_Loan_Number_on_Negotiation` (still active in staging only); it waits for an answer.
 
 ## 11.6 La Haus re-validation [relayed by the team, 2026-10-02]
 - We told La Haus that the Opportunity route and "Visita agendada" on Lead could be re-validated, based on the
@@ -273,9 +274,34 @@ their 8 Work Items) were **not** touched.
   (Business Owner), the Work Item role LOA2 in Negotiation (LOA Team Lead; the org sets the role, and Negotiation needs
   a loan number). Consultations C1 to C6 in the plan were drafted and are pending answers.
 
+## 11.7 SMS opt-out field access and opt flows: validation (2026-10-02) [Verified]
+**Field access.** On 2026-10-01 `FieldPermissions` had 0 rows for `tdc_tsw__SMS_Opt_out__c` in staging; on 2026-10-02
+it had 35 rows on Lead and 35 on Opportunity (System Administrator, Agent, Agent Sales and Branch Manager, read + edit),
+and the field is `createable` / `updateable` on Lead, Opportunity and Contact for a System Administrator. A write and a
+read-back on a test Lead and Opportunity succeeded. The Setup Audit Trail shows **no entry** for this change in the
+last 3 days, so **who or what granted it is not proven**. 360 SMS support said it extended the sandbox trial because
+the sandbox was suspended, which is the likely cause [Unverified]. 360 asked for Login Access to the sandbox; it was
+**not granted**, because the sandbox holds unmasked customer data (~11k Contacts, ~36k Leads; sample emails are
+gmail/hotmail/yahoo addresses) and the access was no longer needed.
+
+**Opt-in / opt-out exclusion with both flows active** (test records, all deleted afterwards):
+| Object | Case | Expected | Result |
+|---|---|---|---|
+| Opportunity | create with opt-in and opt-out both true | opt-out wins: opt-in false | ✔ false / true |
+| Opportunity | create with opt-in only | unchanged | ✔ true / false |
+| Opportunity | then set opt-out true | opt-in cleared | ✔ false / true |
+| Opportunity | then set opt-in true | opt-in wins on update, opt-out cleared | ✔ true / false |
+| Lead | the same four cases | same | ✔ ✔ ✔ ✔ |
+
+**La Haus route with the flows active** (the failure of 2026-09-29): Lead created, `POST /lahaus/convert` → 200,
+`alreadyConverted: false`; then on the new Opportunity the first-message fields, profile picklists, appointment type and
+date, `StageName = Needs Analysis`, `DoNotCall__c` + `HasOptedOutOfEmail__c` and `tdc_tsw__SMS_Opt_out__c = true` all
+updated with no error. So the flows no longer block conversion or Opportunity writes.
+
+Note: we never tried to activate the flows *before* the field became accessible, so it is **not known** whether the
+field access was required for activation. It was required to test the SMS flags through the API.
+
 ## 12. Not explored yet
-- Whether reactivating `Opt_in_Off_Opp` / `Opt_In_Off` in staging breaks anything (a metadata change; the
-  `tdc_tsw__SMS_Opt_out__c` field is not visible to this user, so the SMS flags could not be tested).
 - Which of the staging-only and prod-only flows would change a conversion outcome.
 - Contents of `LaHaus_Outbound_Send` and `LaHaus_Note_History_*` flows.
 - Who deactivated or edited the staging flows on 2026-09-30 22:53 UTC (needs Melquiadez).
