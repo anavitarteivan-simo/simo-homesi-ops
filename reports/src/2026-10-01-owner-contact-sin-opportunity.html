@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Dueño del Contact sin Opportunity: revisión para Business Development</title>
+<style>
+  @page { size: Letter; margin: 8mm 13mm 7mm 13mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Arial, sans-serif; font-size: 8.2pt; line-height: 1.25; color: #1f2328; margin: 0; }
+  header { border-bottom: 2px solid #1f4e79; padding-bottom: 5px; margin-bottom: 9px; }
+  h1 { font-size: 15pt; margin: 0 0 3px; color: #1f4e79; }
+  .meta { font-size: 8.5pt; color: #57606a; }
+  h2 { font-size: 11pt; color: #1f4e79; margin: 11px 0 4px; border-bottom: 1px solid #d0d7de; padding-bottom: 2px; }
+  p { margin: 3px 0 6px; }
+  ul { margin: 3px 0 6px; padding-left: 18px; }
+  li { margin: 2px 0; }
+  code { font-family: Consolas, "Courier New", monospace; font-size: 8.6pt; background: #f3f4f6; padding: 0 3px; border-radius: 3px; }
+  .summary { background: #eef4fa; border-left: 4px solid #1f4e79; padding: 6px 10px; margin: 6px 0 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 4px 0 6px; font-size: 8pt; }
+  th, td { border: 1px solid #d0d7de; padding: 2px 5px; text-align: left; vertical-align: top; }
+  th { background: #f3f6f9; font-weight: 600; }
+  tr { page-break-inside: avoid; }
+  .q { counter-reset: q; list-style: none; padding-left: 0; }
+  .q > li { counter-increment: q; margin: 0 0 4px; padding: 3px 8px 3px 31px; position: relative; border: 1px solid #e3e8ee; border-radius: 4px; background: #fbfcfd; page-break-inside: avoid; }
+  .q > li::before { content: counter(q); position: absolute; left: 8px; top: 4px; width: 17px; height: 17px; border-radius: 50%; background: #1f4e79; color: #fff; font-size: 8pt; font-weight: 600; text-align: center; line-height: 17px; }
+  .ans { display: block; margin-top: 3px; border-bottom: 1px dotted #b6c2cf; height: 12px; }
+  .muted { color: #57606a; }
+  footer { margin-top: 9px; font-size: 7.8pt; color: #57606a; border-top: 1px solid #d0d7de; padding-top: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Dueño del Contact sin Opportunity: revisión</h1>
+  <div class="meta">Homesi / Simo Solutions Group · Salesforce prod (<code>00DKb000000OvoRMAS</code>) ·
+  Autor: Ivan Anavitarte · Fecha: 01-10-2026 · Para: Business Development ·
+  Estado: <strong>Pendiente de su decisión</strong></div>
+</header>
+
+<div class="summary">
+  <strong>En una línea.</strong> Hoy un agente puede quedar como dueño de un Contact sin tener ninguna Opportunity de ese contacto,
+  y Salesforce no lo impide. Les pedimos que revisen las opciones de abajo y confirmen cómo proceder. Todo lo de este informe se leyó
+  en vivo de prod el 01-10-2026 y no se cambió nada para prepararlo.
+</div>
+
+<h2>1. Por qué el sistema lo permite</h2>
+<p>El dueño de un Contact y el dueño de sus Opportunities son datos independientes. Ninguna regla los une.</p>
+<ul>
+  <li><strong>Permisos del perfil Agent Sales.</strong> Tiene Read, Edit, View All y Modify All sobre Contact. Un agente ve todos los
+      contactos, los edita y puede cambiar su dueño.</li>
+  <li><strong>El acceso al Contact viene del Account</strong>, no de las opps (Contact es <em>Controlled by Parent</em>).
+      Ser dueño del Contact no exige tener una opp.</li>
+  <li><strong>No hay controles.</strong> Contact no tiene validation rules, y no se encontró ningún flow que compare el dueño del
+      Contact con el de sus opps.</li>
+  <li><strong>Un Contact nuevo nace a nombre de quien lo crea</strong>, incluida la integración <code>sf integrations</code>.</li>
+  <li><strong>Opportunity y Account son Private.</strong> Cada opp solo la ven su dueño y los grupos con una sharing rule.
+      Ejemplo: el grupo <code>All Branches</code> recibe Edit en las opps cubiertas por su regla.</li>
+  <li><strong>El historial no registra el cambio de dueño del Contact.</strong> No hay forma de saber quién lo cambió ni cuándo.</li>
+</ul>
+
+<h2>2. Reglas de negocio relevantes hoy</h2>
+<ul>
+  <li><strong>Una Opportunity en Closed Won o Closed Lost no se puede modificar</strong>, salvo por un System Administrator.
+      Cerrar una opp duplicada no es un paso reversible para un agente.</li>
+  <li>Una opp borrada va a la Recycle Bin y se puede restaurar durante unos 15 días, con sus Tasks.</li>
+  <li>Hay una sharing rule sobre Contact (<code>Contact_All_Internal_Read</code>) que da Edit a todos los usuarios internos.
+      Hoy está inactiva en la práctica; se activaría si alguien cambia el modelo de acceso de Contact.</li>
+</ul>
+
+<h2>3. Opciones</h2>
+<p class="muted">No medimos cuántos contactos tienen hoy un dueño sin opp. Cualquier opción que cambie permisos o datos se prueba primero en staging.</p>
+<table>
+  <tr><th style="width:21%">Opción</th><th style="width:25%">Qué cambia</th><th style="width:25%">Ventaja</th><th>Riesgo</th></tr>
+  <tr><td><strong>A. No cambiar nada</strong></td><td>El dueño del Contact sigue siendo informativo.</td><td>Cero esfuerzo y cero riesgo operativo.</td><td>Se repiten casos de llamadas y contactos a nombre de quien no trabaja la opp.</td></tr>
+  <tr><td><strong>B. Quitar Modify All sobre Contact al perfil Agent Sales</strong></td><td>Los agentes dejan de poder reasignar o editar contactos ajenos.</td><td>Cierra la causa de fondo.</td><td>Afecta a todos los agentes. Puede romper flujos que hoy editan contactos de otros.</td></tr>
+  <tr><td><strong>C. Exigir al guardar que el dueño tenga una opp de ese contacto</strong></td><td>Una validation rule o un flow bloquea el cambio de dueño.</td><td>Garantiza la regla de negocio.</td><td>Bloquea altas legítimas, porque un Contact nuevo nace sin opp. Requiere excepciones.</td></tr>
+  <tr><td><strong>D. Reporte periódico de contactos cuyo dueño no tiene opp</strong></td><td>No cambia permisos ni datos. Se revisa y corrige a mano.</td><td>Visibilidad sin riesgo.</td><td>Corrige después del hecho, no lo evita.</td></tr>
+</table>
+
+<h2>4. Preguntas para Business Development</h2>
+<ol class="q">
+  <li>¿El dueño de un Contact Realtor debe ser siempre quien tiene la opp activa con él? Si hay excepciones, ¿cuáles?<span class="ans"></span></li>
+  <li>¿Un agente puede quedarse con un contacto ajeno para trabajarlo antes de crear una opp? Si es así, ¿por cuánto tiempo?<span class="ans"></span></li>
+  <li>¿Quién puede reasignar el dueño de un Contact: cualquier agente, o solo un manager?<span class="ans"></span></li>
+  <li>¿Cuál de las opciones A, B, C o D prefieren, o qué combinación?<span class="ans"></span></li>
+  <li>Para evitar opps duplicadas en el futuro: ¿quién debe revisar un contacto antes de crear una opp nueva?<span class="ans"></span></li>
+</ol>
+
+<footer>Snapshot del 01-10-2026. Fuente: consultas de solo lectura sobre Salesforce prod.</footer>
+
+</body>
+</html>

@@ -38,6 +38,8 @@ where noted in "Known stale content" below.
 | Topic | File |
 |---|---|
 | 2-day Opportunity-save outage — why entry criteria must use `RecordTypeId` | `salesforce/PROD_OUTAGE_RCA_2DAY.md` |
+| Who can own a Contact, how Contacts are created / converted, and what does (not) stop duplicates (2026-10-01) | `salesforce/CONTACT_OWNERSHIP_AND_DEDUP.md` |
+| B2B Opportunity duplicate guard, rules A + B (design only, awaiting Business Owner, 2026-10-01) | `salesforce/B2B_OPP_DUPLICATE_GUARD_DESIGN.md` |
 | Lead imports (Data Import Wizard) | `salesforce/LEAD_IMPORT.md` |
 | Recruitment copilot (MMI + NMLS) | `salesforce/RECRUITMENT_COPILOT.md` |
 | Latino name likelihood | `salesforce/LATINO_NAME_RUNBOOK.md` |
