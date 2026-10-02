@@ -18,6 +18,7 @@ architecture summaries. They are **snapshots** — the living truth stays in `do
 
 | Date | Report | Summarises |
 |---|---|---|
+| 2026-09-30 | [Revisión previa: limpieza de Tasks de Customer.io](2026-09-30-revision-tasks-customerio.pdf): preguntas para el desarrollador anterior antes de ejecutar | `docs/customerio/TASK_STORAGE_PLAN.md` |
 | 2026-09-30 | [Incidencia: Owner revertido en loans F30EEP](2026-09-30-incidencia-owner-f30eep.pdf) — incluye el ajuste definitivo (seguir al padre solo cuando cambia) | `docs/salesforce/ORG_REFERENCE.md` gotcha #31 |
 | 2026-09-29 | ~~Incidencia: Owner revertido en loans F30EEP~~ ([pdf](2026-09-29-incidencia-owner-f30eep.pdf)) — reemplazado por el del 2026-09-30 | — |
 | 2026-09-29 | [Inventario de automatizaciones de Salesforce](2026-09-29-inventario-automatizaciones-salesforce.pdf) | `docs/salesforce/AUTOMATION_INVENTORY.md` |
